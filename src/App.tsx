@@ -1,3 +1,4 @@
+import { Icon, navIcons, statusIcons } from "./Icon";
 import {
   useCallback,
   useEffect,
@@ -125,9 +126,12 @@ export default function App() {
     <div className="shell">
       <header className="topbar">
         <a href="#" className="brand" onClick={() => setTab("ホーム")}>
-          <span className="brand-mark">l.</span>life-log
+          <span className="brand-mark">
+            <Icon name="leaf" />
+          </span>
+          life-log
         </a>
-        <span className="tagline">日々の積み重ねを、自分の力に。</span>
+        <span className="tagline">わたしの記録帳</span>
         {session && (
           <button className="text-button" onClick={logout} disabled={busy}>
             ログアウト
@@ -150,14 +154,21 @@ export default function App() {
           <>
             <div className="intro">
               <div>
-                <p className="eyebrow">MY DAILY GROWTH</p>
-                <h1>今日の積み重ね</h1>
-                <p className="muted">小さな一歩も、ちゃんと残そう。</p>
+                <h1>{tab === "ホーム" ? "今日の記録" : tab}</h1>
+                <p className="muted">
+                  {tab === "ホーム"
+                    ? "できたことを、ひとつずつ。"
+                    : tab === "履歴"
+                      ? "これまでに取り組んだこと。"
+                      : tab === "行動ルール"
+                        ? "自分のペースに合わせて。"
+                        : "少し離れて、眺めてみよう。"}
+                </p>
               </div>
               <span className="date">{today().replaceAll("-", " / ")}</span>
             </div>
             <nav aria-label="メインメニュー">
-              {tabs.map((t) => (
+              {tabs.map((t, i) => (
                 <button
                   key={t}
                   aria-current={tab === t ? "page" : undefined}
@@ -167,7 +178,8 @@ export default function App() {
                     setEditing(undefined);
                   }}
                 >
-                  {t}
+                  <Icon name={navIcons[i]} />
+                  {t === "ホーム" ? "記録する" : t}
                 </button>
               ))}
             </nav>
@@ -194,49 +206,61 @@ export default function App() {
               </p>
             )}
             {tab === "ホーム" && (
-              <>
-                <section className="hero card">
-                  <div>
-                    <p className="eyebrow">YOUR PROGRESS</p>
-                    <h2>少しずつ、前へ。</h2>
-                    <p>
-                      これまでの努力 <strong>{summary.xp}</strong> XP
-                    </p>
-                  </div>
-                  <div className="level">
-                    <span>Level</span>
-                    <strong>{summary.level}</strong>
-                  </div>
-                  <div className="level-meter">
-                    <div className="between">
-                      <span>次のレベルまであと {summary.next} XP</span>
-                      <span>{summary.levelProgress} / 15</span>
-                    </div>
-                    <progress
-                      aria-label="次のレベルへの進捗"
-                      value={summary.levelProgress}
-                      max={15}
-                    />
-                  </div>
-                </section>
-                <section aria-label="ステータス" className="stats">
-                  {data.statuses.map((s, i) => (
-                    <article className="stat card" key={s.id}>
-                      <span className="stat-index">0{i + 1}</span>
-                      <h3>{s.name}</h3>
-                      <p>
-                        <strong>{summary.points[s.id] ?? 0}</strong>
-                        <span> pt</span>
+              <div className="home-layout">
+                <aside className="growth-panel" aria-label="成長のまとめ">
+                  <section className="hero card">
+                    <div>
+                      <span className="section-kicker">
+                        <Icon name="leaf" />
+                        これまでの積み重ね
+                      </span>
+                      <p className="xp-total">
+                        これまでの努力 <strong>{summary.xp}</strong> XP
                       </p>
-                    </article>
-                  ))}
-                </section>
+                    </div>
+                    <div className="level">
+                      <span>レベル</span>
+                      <strong>{summary.level}</strong>
+                    </div>
+                    <div className="level-meter">
+                      <div className="between">
+                        <span>次のレベルまであと {summary.next} XP</span>
+                        <span>{summary.levelProgress} / 15</span>
+                      </div>
+                      <progress
+                        aria-label="次のレベルへの進捗"
+                        value={summary.levelProgress}
+                        max={15}
+                      />
+                    </div>
+                  </section>
+                  <section aria-label="ステータス" className="stats">
+                    {data.statuses.map((s, i) => (
+                      <article className="stat" key={s.id}>
+                        <span className="stat-icon">
+                          <Icon name={statusIcons[i % statusIcons.length]} />
+                        </span>
+                        <h3>{s.name}</h3>
+                        <p>
+                          <strong>{summary.points[s.id] ?? 0}</strong>
+                          <span> pt</span>
+                        </p>
+                      </article>
+                    ))}
+                  </section>
+                  <p className="growth-note">
+                    休む日があっても、積み重ねはそのまま。
+                  </p>
+                </aside>
                 <div className="columns">
-                  <section className="card">
-                    <h2>今日の努力を記録</h2>
-                    <p className="muted">
-                      取り組んだ時間や回数を、まとめて記録できます。
-                    </p>
+                  <section className="card record-card">
+                    <div className="record-heading">
+                      <span className="section-icon">
+                        <Icon name="write" />
+                      </span>
+                      <h2>今日は何をしましたか？</h2>
+                    </div>
+                    <p className="muted">時間や回数を入れて、さっと記録。</p>
                     <EntryForm
                       key={data.versions.map((v) => v.id).join()}
                       data={data}
@@ -244,15 +268,15 @@ export default function App() {
                       onSave={(entry) =>
                         mutate(
                           () => saveEntry(entry, session.user.id, false),
-                          "記録しました。今日の一歩が積み重なりました。",
+                          "記録しました。おつかれさま ☕",
                         )
                       }
                     />
                   </section>
-                  <section className="card">
-                    <h2>次の一歩</h2>
+                  <section className="next-panel">
+                    <h2>次のポイントまで</h2>
                     <p className="muted">
-                      ポイントになる前の努力も、残っています。
+                      途中の分も、ちゃんと貯まっています。
                     </p>
                     {summary.progress
                       .filter(
@@ -301,16 +325,17 @@ export default function App() {
                     )}
                   </section>
                 </div>
-              </>
+              </div>
             )}
             {tab === "行動ルール" && (
               <section className="card">
                 <div className="between">
-                  <h2>自分に合う行動ルール</h2>
+                  <h2>行動ルール</h2>
                   <button
                     disabled={busy || loading || !data.statuses.length}
                     onClick={() => setRuleEditor("new")}
                   >
+                    <Icon name="plus" />
                     追加する
                   </button>
                 </div>
@@ -422,7 +447,7 @@ export default function App() {
                         mutate(async () => {
                           await saveEntry(entry, session.user.id, true);
                           setEditing(undefined);
-                        }, "記録を訂正しました。ポイントも再計算しました。")
+                        }, "記録を更新しました。")
                       }
                     />
                   </div>
@@ -487,7 +512,7 @@ export default function App() {
             )}
             {tab === "振り返り" && (
               <section className="card">
-                <h2>積み重ねを振り返る</h2>
+                <h2>記録のペース</h2>
                 <div className="form-row">
                   <label>
                     表示期間
@@ -538,7 +563,9 @@ export default function App() {
           </>
         )}
       </main>
-      <footer>あなたのペースで、ひとつずつ。</footer>
+      <footer>
+        <Icon name="leaf" /> わたしのペースで。
+      </footer>
     </div>
   );
 }
@@ -571,13 +598,11 @@ function Login({
   }
   return (
     <section className="card login">
-      <p className="eyebrow">WELCOME TO LIFE-LOG</p>
-      <h1>
-        小さな努力を、
-        <br />
-        見えるかたちに。
-      </h1>
-      <p className="muted">記録するたび、自分の積み重ねが見えてくる。</p>
+      <span className="login-symbol">
+        <Icon name="leaf" />
+      </span>
+      <h1>おかえりなさい</h1>
+      <p className="muted">今日のできたこと、残していこう。</p>
       <form className="form" onSubmit={login}>
         <label>
           メールアドレス
@@ -611,9 +636,7 @@ function Login({
         </button>
       </form>
       <p className="muted">
-        <small>
-          自分専用の記録帳です。登録済みのアカウントでログインしてください。
-        </small>
+        <small>あなただけの記録帳です。</small>
       </p>
     </section>
   );

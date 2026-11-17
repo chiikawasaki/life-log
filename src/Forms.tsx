@@ -1,3 +1,4 @@
+import { Icon } from "./Icon";
 import { useRef, useState, type FormEvent } from "react";
 import {
   type Data,
@@ -151,11 +152,13 @@ export function EntryForm({
         </label>
       </div>
       <label>
-        メモ <span className="muted">任意</span>
+        <span>
+          メモ <span className="optional-label">任意</span>
+        </span>
         <textarea
           maxLength={1000}
           rows={2}
-          placeholder="今日は何に取り組みましたか？"
+          placeholder="ひとこと残す？"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           disabled={busy}
@@ -166,9 +169,10 @@ export function EntryForm({
           {validation}
         </p>
       )}
-      <div className="actions">
+      <div className="actions form-actions">
         <button disabled={busy} type="submit">
-          {busy ? "保存中…" : entry ? "変更を保存" : "努力を記録する"}
+          {busy ? "保存中…" : entry ? "変更を保存" : "記録する"}
+          <Icon name="arrow" />
         </button>
         {onCancel && (
           <button
