@@ -98,22 +98,35 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "ログイン", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("login.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
   await page.getByLabel("メールアドレス").fill("owner@example.test");
   await page.getByLabel("パスワード").fill("test-password");
   await page.getByRole("button", { name: "ログイン", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "今日の積み重ね" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "今日の記録" })).toBeVisible();
   await page.getByLabel("時間", { exact: true }).fill("1");
   await page.getByLabel("分", { exact: true }).fill("30");
-  await page.getByRole("button", { name: "努力を記録する" }).click();
+  await page
+    .locator("form")
+    .getByRole("button", { name: "記録する", exact: true })
+    .click();
   await expect(page.getByText(/あと 30 分で達成/)).toBeVisible();
   await page.getByLabel("分", { exact: true }).fill("30");
-  await page.getByRole("button", { name: "努力を記録する" }).click();
+  await page
+    .locator("form")
+    .getByRole("button", { name: "記録する", exact: true })
+    .click();
   await expect(page.locator(".hero")).toContainText("これまでの努力 1 XP");
   await page.screenshot({
     path: testInfo.outputPath("home.png"),
     fullPage: true,
+    animations: "disabled",
   });
   expect(
     await page.evaluate(
@@ -125,21 +138,32 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await page.getByRole("button", { name: "訂正", exact: true }).first().click();
   await page.getByLabel("分", { exact: true }).fill("60");
   await page.getByRole("button", { name: "変更を保存" }).click();
-  await expect(
-    page.getByText("記録を訂正しました。ポイントも再計算しました。"),
-  ).toBeVisible();
+  await expect(page.getByText("記録を更新しました。")).toBeVisible();
   await page.getByRole("button", { name: "振り返り", exact: true }).click();
   await expect(page.locator(".chart")).toContainText("1 XP / 2件");
   await page.getByRole("button", { name: "履歴", exact: true }).click();
   page.on("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "削除", exact: true }).first().click();
   await expect(page.locator(".list-item")).toHaveCount(1);
-  await page.getByRole("button", { name: "ホーム", exact: true }).click();
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "記録する", exact: true })
+    .click();
   await expect(page.locator(".hero")).toContainText("これまでの努力 0 XP");
   await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "今日の積み重ね" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "今日の記録" })).toBeVisible();
+  await page.getByRole("button", { name: "行動ルール", exact: true }).click();
+  await page.getByRole("button", { name: "追加する", exact: true }).click();
+  await page.screenshot({
+    path: testInfo.outputPath("rules.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
   await page.getByRole("button", { name: "ログアウト" }).click();
   await expect(
     page.getByRole("button", { name: "ログイン", exact: true }),
