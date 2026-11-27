@@ -165,21 +165,46 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await expect(recordNotice.getByText("レベルアップ！")).toHaveCount(0);
   await recordNotice.getByRole("button", { name: "閉じる" }).click();
   await page.getByRole("button", { name: "振り返り", exact: true }).click();
-  const calendar = page.getByRole("group", { name: "日ごとの記録" });
-  const recordedDay = calendar.getByRole("button", { name: /1 XP \/ 2件/ });
-  await expect(recordedDay).toHaveAttribute("data-level", "2");
-  await expect(recordedDay).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".activity-detail")).toContainText("1 XP / 2件");
+  const reflection = page.getByRole("region", { name: "振り返りの表示期間" });
+  await expect(reflection).toContainText("1 XP / 2件");
+  const charts = [
+    page.getByRole("img", { name: "日ごとの獲得XPの折れ線グラフ" }),
+    page.getByRole("img", { name: "日ごとの記録件数の棒グラフ" }),
+    page.getByRole("img", { name: "ステータス別の獲得XPのドーナツグラフ" }),
+  ];
+  for (const chart of charts) {
+    await chart.scrollIntoViewIfNeeded();
+    await expect(chart).toBeInViewport();
+    await expect
+      .poll(() =>
+        chart.evaluate((element) => {
+          const canvas = element as HTMLCanvasElement;
+          return canvas
+            .getContext("2d")
+            ?.getImageData(0, 0, canvas.width, canvas.height)
+            .data.some((channel) => channel !== 0);
+        }),
+      )
+      .toBe(true);
+  }
   await capture("reflection");
   await page.getByLabel("この日まで").fill("2026-01-04");
-  const sunday = calendar.getByRole("button", {
-    name: "2026-01-04 0 XP / 0件",
-  });
-  await expect(sunday).toHaveCSS("grid-row-start", "7");
-  await expect(sunday).toHaveAttribute("data-level", "0");
-  await calendar.getByRole("button", { name: "2026-01-01 0 XP / 0件" }).click();
-  await expect(page.locator(".activity-detail")).toContainText("2026-01-01");
-  await expect(page.locator(".activity-detail")).toContainText("0 XP / 0件");
+  await expect(reflection).toContainText("2025-12-05 〜 2026-01-04");
+  await page.getByText("1週間", { exact: true }).click();
+  await expect(reflection).toContainText("2025-12-29 〜 2026-01-04");
+  await page.getByText("3ヶ月", { exact: true }).click();
+  await expect(reflection).toContainText("2025-10-05 〜 2026-01-04");
+  await expect(reflection).toContainText("0 XP / 0件");
+  await expect(
+    page.getByText("この期間に獲得したXPはありません。"),
+  ).toBeVisible();
+  await page.getByText("日別の数値を見る").click();
+  await expect(page.getByRole("row", { name: "2026-01-04 0 0" })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
   await page.getByRole("button", { name: "履歴", exact: true }).click();
   page.on("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "削除", exact: true }).first().click();

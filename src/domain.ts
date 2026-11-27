@@ -106,14 +106,26 @@ export function shiftDay(day: string, delta: number) {
   date.setUTCDate(date.getUTCDate() + delta);
   return date.toISOString().slice(0, 10);
 }
-export function periodDays(mode: "week" | "month", end: string) {
-  const date = new Date(end + "T00:00:00Z");
-  const start =
-    mode === "week"
-      ? shiftDay(end, -((date.getUTCDay() + 6) % 7))
-      : end.slice(0, 8) + "01";
+export type ReflectionPeriod = "week" | "month" | "quarter";
+
+export function periodDays(mode: ReflectionPeriod, end: string) {
+  const start = new Date(end + "T00:00:00Z");
+  if (mode === "week") {
+    start.setUTCDate(start.getUTCDate() - 6);
+  } else {
+    const endDay = start.getUTCDate();
+    start.setUTCDate(1);
+    start.setUTCMonth(start.getUTCMonth() - (mode === "month" ? 1 : 3));
+    const lastDay = new Date(start);
+    lastDay.setUTCMonth(lastDay.getUTCMonth() + 1, 0);
+    start.setUTCDate(Math.min(endDay, lastDay.getUTCDate()) + 1);
+  }
   const days: string[] = [];
-  for (let day = start; day <= end; day = shiftDay(day, 1)) days.push(day);
+  const first =
+    start.getUTCFullYear() < 1
+      ? "0001-01-01"
+      : start.toISOString().slice(0, 10);
+  for (let day = first; day <= end; day = shiftDay(day, 1)) days.push(day);
   return days;
 }
 export function dailyPoints(data: Data, days: string[]) {
