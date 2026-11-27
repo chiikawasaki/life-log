@@ -140,7 +140,20 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await page.getByRole("button", { name: "変更を保存" }).click();
   await expect(page.getByText("記録を更新しました。")).toBeVisible();
   await page.getByRole("button", { name: "振り返り", exact: true }).click();
-  await expect(page.locator(".chart")).toContainText("1 XP / 2件");
+  const calendar = page.getByRole("group", { name: "日ごとの記録" });
+  const recordedDay = calendar.getByRole("button", { name: /1 XP \/ 2件/ });
+  await expect(recordedDay).toHaveAttribute("data-level", "2");
+  await expect(recordedDay).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".activity-detail")).toContainText("1 XP / 2件");
+  await page.getByLabel("この日まで").fill("2026-01-04");
+  const sunday = calendar.getByRole("button", {
+    name: "2026-01-04 0 XP / 0件",
+  });
+  await expect(sunday).toHaveCSS("grid-row-start", "7");
+  await expect(sunday).toHaveAttribute("data-level", "0");
+  await calendar.getByRole("button", { name: "2026-01-01 0 XP / 0件" }).click();
+  await expect(page.locator(".activity-detail")).toContainText("2026-01-01");
+  await expect(page.locator(".activity-detail")).toContainText("0 XP / 0件");
   await page.getByRole("button", { name: "履歴", exact: true }).click();
   page.on("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "削除", exact: true }).first().click();

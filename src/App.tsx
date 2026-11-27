@@ -19,6 +19,8 @@ import {
   today,
 } from "./domain";
 import { EntryForm, RuleForm } from "./Forms";
+const weekdays = ["月", "火", "水", "木", "金", "土", "日"];
+const activityLevels = [0, 1, 2, 3, 4];
 const tabs = ["ホーム", "履歴", "行動ルール", "振り返り"] as const;
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -31,8 +33,9 @@ export default function App() {
   const [tab, setTab] = useState<(typeof tabs)[number]>("ホーム");
   const [editing, setEditing] = useState<Entry>();
   const [ruleEditor, setRuleEditor] = useState<Rule | "new" | null>(null);
-  const [period, setPeriod] = useState<"week" | "month">("week");
+  const [period, setPeriod] = useState<"week" | "month">("month");
   const [end, setEnd] = useState(today());
+  const [selectedDay, setSelectedDay] = useState<string>();
   const userRef = useRef<string | null>(null);
   const mutationLock = useRef(false);
   const refresh = useCallback(async () => {
@@ -115,8 +118,12 @@ export default function App() {
     if (err) setError(friendlyError(err));
   }
   const summary = summarize(data);
-  const series = dailyPoints(data, periodDays(period, end));
-  const chartMax = Math.max(1, ...series.map((point) => point.xp));
+  const series =
+    tab === "振り返り" ? dailyPoints(data, periodDays(period, end)) : [];
+  const firstDay = series[0]?.day ?? end;
+  const firstWeekday = (new Date(firstDay).getUTCDay() + 6) % 7;
+  const selectedPoint =
+    series.find((point) => point.day === selectedDay) ?? series.at(-1);
   const history = [...data.entries].sort(
     (a, b) =>
       b.performed_on.localeCompare(a.performed_on) ||
@@ -518,9 +525,10 @@ export default function App() {
                     表示期間
                     <select
                       value={period}
-                      onChange={(e) =>
-                        setPeriod(e.target.value as "week" | "month")
-                      }
+                      onChange={(e) => {
+                        setPeriod(e.target.value as "week" | "month");
+                        setSelectedDay(undefined);
+                      }}
                     >
                       <option value="week">週（月曜から）</option>
                       <option value="month">月</option>
@@ -533,30 +541,72 @@ export default function App() {
                       value={end}
                       max={today()}
                       onChange={(e) => {
-                        if (e.target.value) setEnd(e.target.value);
+                        if (e.target.value && e.target.value <= today()) {
+                          setEnd(e.target.value);
+                          setSelectedDay(undefined);
+                        }
                       }}
                     />
                   </label>
                 </div>
                 <p className="muted">
-                  日付は日本時間。選んだ日までの、獲得した経験値と記録件数です。
+                  色の濃さは記録件数を表します。マスを選ぶと、その日の件数と獲得XPを確認できます（日付は日本時間）。
                 </p>
                 <div className="chart">
-                  {series.map((d) => (
-                    <div className="chart-row" key={d.day}>
-                      <span>{d.day.slice(5).replace("-", "/")}</span>
-                      <div className="chart-track">
-                        <div
-                          style={{
-                            width: `${Math.min(100, (d.xp / chartMax) * 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <span>
-                        {d.xp} XP / {d.count}件
+                  <div
+                    className="activity-calendar"
+                    role="group"
+                    aria-label="日ごとの記録"
+                  >
+                    {weekdays.map((day) => (
+                      <span
+                        key={day}
+                        className="activity-weekday"
+                        aria-hidden="true"
+                      >
+                        {day}
                       </span>
-                    </div>
-                  ))}
+                    ))}
+                    {series.map((point, index) => (
+                      <button
+                        type="button"
+                        key={point.day}
+                        className="activity-day"
+                        data-level={Math.min(point.count, 4)}
+                        style={{
+                          gridRow: ((firstWeekday + index) % 7) + 1,
+                          gridColumn:
+                            Math.floor((firstWeekday + index) / 7) + 2,
+                        }}
+                        aria-label={`${point.day} ${point.xp} XP / ${point.count}件`}
+                        aria-pressed={point.day === selectedPoint?.day}
+                        title={`${point.day} ${point.xp} XP / ${point.count}件`}
+                        onClick={() => setSelectedDay(point.day)}
+                      />
+                    ))}
+                  </div>
+                  <div className="activity-legend" aria-label="色の凡例">
+                    <span>0件</span>
+                    {activityLevels.map((level) => (
+                      <span
+                        key={level}
+                        className="activity-swatch"
+                        data-level={level}
+                        aria-hidden="true"
+                      />
+                    ))}
+                    <span>4件以上</span>
+                  </div>
+                  {selectedPoint && (
+                    <p className="activity-detail" aria-live="polite">
+                      <time dateTime={selectedPoint.day}>
+                        {selectedPoint.day}
+                      </time>
+                      <strong>
+                        {selectedPoint.xp} XP / {selectedPoint.count}件
+                      </strong>
+                    </p>
+                  )}
                 </div>
               </section>
             )}
