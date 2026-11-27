@@ -131,3 +131,26 @@ body {
   --bs-btn-active-border-color: var(--rose);
   --bs-btn-focus-shadow-rgb: var(--rose-rgb);
 }
+
+.home-layout {
+  display: grid;
+  grid-template-areas: "record" "stats" "goals";
+  gap: 1.5rem;
+  align-items: start;
+}
+.home-record {
+  grid-area: record;
+}
+.home-stats {
+  grid-area: stats;
+}
+.home-goals {
+  grid-area: goals;
+}
+@media (min-width: 992px) {
+  .home-layout {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "record stats" "goals stats";
+  }
+}

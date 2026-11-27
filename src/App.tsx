@@ -247,23 +247,10 @@ export default function App() {
                 最新の記録を読み込み中…
               </p>
             )}
-            <Goals
-              key={session.user.id}
-              userId={session.user.id}
-              statuses={data.statuses}
-              view={
-                tab === "ホーム"
-                  ? "home"
-                  : tab === "目標"
-                    ? "manage"
-                    : undefined
-              }
-              onManage={() => setTab("目標")}
-            />
-            {tab === "ホーム" && (
-              <div className="row g-4">
-                <div className="col-lg-7 d-grid gap-4 align-content-start">
-                  <section className="card shadow-sm p-3 p-md-4">
+            <div className={tab === "ホーム" ? "home-layout" : undefined}>
+              {tab === "ホーム" && (
+                <>
+                  <section className="home-record card shadow-sm p-3 p-md-4">
                     <div className="d-flex align-items-center gap-2 mb-2">
                       <span className="app-icon bg-primary-subtle text-primary">
                         <Icon name="write" />
@@ -279,108 +266,67 @@ export default function App() {
                       }
                     />
                   </section>
-                  <section className="card shadow-sm p-3 p-md-4">
-                    <h2 className="h5">次のポイントまで</h2>
-                    <div className="list-group list-group-flush">
-                      {summary.progress
-                        .filter(
-                          (v) =>
-                            data.rules.some(
-                              (r) => r.id === v.rule_id && !r.archived_at,
-                            ) &&
-                            !data.versions.some(
-                              (other) =>
-                                other.rule_id === v.rule_id &&
-                                other.created_at > v.created_at,
-                            ),
-                        )
-                        .map((v) => (
-                          <article
-                            className="list-group-item px-0 py-3"
-                            key={v.id}
-                          >
-                            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                              <strong>
-                                {
-                                  data.rules.find((r) => r.id === v.rule_id)
-                                    ?.name
-                                }
-                              </strong>
-                              <span>＋{v.reward_points} pt</span>
-                            </div>
-                            <Progress
-                              label={`${data.rules.find((r) => r.id === v.rule_id)?.name}の進捗`}
-                              max={v.required_quantity}
-                              value={v.remainder}
-                            />
-                            <small>
-                              あと {v.remaining} {v.unit}で達成 · 累計{" "}
-                              {v.quantity} {v.unit}
-                            </small>
-                          </article>
-                        ))}
-                    </div>
-                    {!data.rules.some((r) => !r.archived_at) && (
-                      <div className="alert alert-light border mb-0">
-                        有効な行動ルールがありません。
-                        <button
-                          className="btn btn-outline-secondary d-block mt-2"
-                          onClick={() => {
-                            setTab("行動ルール");
-                            setRuleEditor("new");
-                          }}
-                        >
-                          行動ルールを作る
-                        </button>
+                  <aside className="home-stats" aria-label="成長のまとめ">
+                    <section className="hero card bg-primary-subtle border-primary-subtle p-3 p-md-4 shadow-sm">
+                      <p className="fs-5 mb-0">
+                        累計 <strong>{summary.xp}</strong> XP
+                      </p>
+                      <div className="d-flex align-items-baseline gap-2 my-3">
+                        <span>レベル</span>
+                        <strong className="display-5 fw-semibold">
+                          {summary.level}
+                        </strong>
                       </div>
-                    )}
-                  </section>
-                </div>
-                <aside className="col-lg-5" aria-label="成長のまとめ">
-                  <section className="hero card bg-primary-subtle border-primary-subtle p-3 p-md-4 shadow-sm">
-                    <p className="fs-5 mb-0">
-                      累計 <strong>{summary.xp}</strong> XP
-                    </p>
-                    <div className="d-flex align-items-baseline gap-2 my-3">
-                      <span>レベル</span>
-                      <strong className="display-5 fw-semibold">
-                        {summary.level}
-                      </strong>
-                    </div>
-                    <div className="small">
-                      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                        <span>次のレベルまであと {summary.next} XP</span>
-                        <span>{summary.levelProgress} / 15</span>
-                      </div>
-                      <Progress
-                        label="次のレベルへの進捗"
-                        value={summary.levelProgress}
-                        max={15}
-                      />
-                    </div>
-                  </section>
-                  <section
-                    aria-label="ステータス"
-                    className="row row-cols-2 row-cols-sm-3 g-2 mt-2"
-                  >
-                    {data.statuses.map((s) => (
-                      <article className="col" key={s.id}>
-                        <div className="card h-100 p-3">
-                          <span className="app-icon bg-primary-subtle text-primary">
-                            <Icon name={statusIcons[s.name] ?? "chart"} />
-                          </span>
-                          <h3 className="h6 mt-2">{s.name}</h3>
-                          <p className="mb-0">
-                            <strong>{summary.points[s.id] ?? 0}</strong>
-                            <span className="text-body-secondary"> pt</span>
-                          </p>
+                      <div className="small">
+                        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                          <span>次のレベルまであと {summary.next} XP</span>
+                          <span>{summary.levelProgress} / 15</span>
                         </div>
-                      </article>
-                    ))}
-                  </section>
-                </aside>
+                        <Progress
+                          label="次のレベルへの進捗"
+                          value={summary.levelProgress}
+                          max={15}
+                        />
+                      </div>
+                    </section>
+                    <section
+                      aria-label="ステータス"
+                      className="row row-cols-2 row-cols-sm-3 g-2 mt-2"
+                    >
+                      {data.statuses.map((s) => (
+                        <article className="col" key={s.id}>
+                          <div className="card h-100 p-3">
+                            <span className="app-icon bg-primary-subtle text-primary">
+                              <Icon name={statusIcons[s.name] ?? "chart"} />
+                            </span>
+                            <h3 className="h6 mt-2">{s.name}</h3>
+                            <p className="mb-0">
+                              <strong>{summary.points[s.id] ?? 0}</strong>
+                              <span className="text-body-secondary"> pt</span>
+                            </p>
+                          </div>
+                        </article>
+                      ))}
+                    </section>
+                  </aside>
+                </>
+              )}
+              <div className={tab === "ホーム" ? "home-goals" : undefined}>
+                <Goals
+                  key={session.user.id}
+                  userId={session.user.id}
+                  statuses={data.statuses}
+                  view={
+                    tab === "ホーム"
+                      ? "home"
+                      : tab === "目標"
+                        ? "manage"
+                        : undefined
+                  }
+                  onManage={() => setTab("目標")}
+                />
               </div>
-            )}
+            </div>
             {tab === "行動ルール" && (
               <section className="card shadow-sm p-3 p-md-4">
                 <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
