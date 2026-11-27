@@ -573,24 +573,68 @@ select:disabled {
 .chart {
   margin-top: 28px;
 }
-.chart-row {
+.activity-calendar {
   display: grid;
-  grid-template-columns: 48px 1fr 104px;
+  grid-template-columns: 2rem;
+  grid-auto-columns: 1.75rem;
+  grid-template-rows: repeat(7, 1.75rem);
+  grid-auto-flow: column;
   align-items: center;
-  gap: 14px;
-  margin: 14px 0;
+  gap: 6px;
+}
+.activity-weekday,
+.activity-legend {
+  color: var(--muted);
   font-size: 12px;
 }
-.chart-track {
-  background: #f8f0f4;
-  border-radius: 99px;
-  height: 10px;
-  overflow: hidden;
+.activity-day,
+.activity-swatch {
+  border: 1px solid #233e251a;
+  border-radius: 4px;
+  background: var(--activity-color, #f0eeef);
 }
-.chart-track > div {
+.activity-day {
+  width: 100%;
   height: 100%;
-  background: #ce7999;
-  border-radius: 99px;
+  padding: 0;
+}
+.activity-day:hover {
+  background: var(--activity-color, #f0eeef);
+  border-color: #386650;
+}
+.activity-day[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px #386650;
+}
+.activity-day:focus-visible {
+  outline-offset: 1px;
+}
+.chart [data-level="1"] {
+  --activity-color: #d5efdc;
+}
+.chart [data-level="2"] {
+  --activity-color: #a0d9ae;
+}
+.chart [data-level="3"] {
+  --activity-color: #5eb579;
+}
+.chart [data-level="4"] {
+  --activity-color: #2b7b47;
+}
+.activity-legend,
+.activity-detail {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+.activity-swatch {
+  width: 12px;
+  height: 12px;
+}
+.activity-detail {
+  gap: 12px;
+  font-size: 14px;
 }
 .login {
   max-width: 420px;
@@ -791,10 +835,6 @@ footer .icon {
   }
   .between {
     flex-wrap: wrap;
-  }
-  .chart-row {
-    grid-template-columns: 42px 1fr 94px;
-    gap: 8px;
   }
   .login {
     padding: 28px;
