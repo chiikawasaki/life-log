@@ -131,7 +131,24 @@ export default function App() {
           </span>
           life-log
         </a>
-        <span className="tagline">わたしの記録帳</span>
+        {session && (
+          <nav className="header-nav" aria-label="メインメニュー">
+            {tabs.map((t, i) => (
+              <button
+                key={t}
+                aria-current={tab === t ? "page" : undefined}
+                disabled={busy}
+                onClick={() => {
+                  setTab(t);
+                  setEditing(undefined);
+                }}
+              >
+                <Icon name={navIcons[i]} />
+                {t === "ホーム" ? "記録する" : t}
+              </button>
+            ))}
+          </nav>
+        )}
         {session && (
           <button className="text-button" onClick={logout} disabled={busy}>
             ログアウト
@@ -167,22 +184,6 @@ export default function App() {
               </div>
               <span className="date">{today().replaceAll("-", " / ")}</span>
             </div>
-            <nav aria-label="メインメニュー">
-              {tabs.map((t, i) => (
-                <button
-                  key={t}
-                  aria-current={tab === t ? "page" : undefined}
-                  disabled={busy}
-                  onClick={() => {
-                    setTab(t);
-                    setEditing(undefined);
-                  }}
-                >
-                  <Icon name={navIcons[i]} />
-                  {t === "ホーム" ? "記録する" : t}
-                </button>
-              ))}
-            </nav>
             {error && (
               <div role="alert" className="notice error">
                 {error}{" "}

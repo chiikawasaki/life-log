@@ -107,6 +107,7 @@ p {
   display: flex;
   align-items: center;
   gap: 20px;
+  border-bottom: 1px solid var(--line);
 }
 .brand {
   text-decoration: none;
@@ -125,12 +126,6 @@ p {
   border-radius: 13px;
   width: 36px;
   height: 36px;
-}
-.tagline {
-  font-size: 11px;
-  color: var(--muted);
-  flex: 1;
-  letter-spacing: 0.08em;
 }
 .topbar .text-button {
   margin-left: auto;
@@ -158,36 +153,29 @@ main {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-nav {
+.header-nav {
   display: flex;
-  width: fit-content;
-  max-width: 100%;
-  gap: 5px;
-  background: #f7f4f5;
-  padding: 5px;
-  border-radius: 999px;
-  margin-bottom: 32px;
+  align-items: center;
+  gap: 4px;
 }
-nav button {
-  background: none;
+.header-nav button {
+  background: transparent;
   color: #786a72;
+  border-radius: 6px 6px 0 0;
   font-size: 13px;
-  padding: 10px 20px;
-  font-weight: 500;
+  padding: 12px 10px;
   white-space: nowrap;
 }
-nav button .icon {
+.header-nav button .icon {
   width: 17px;
   height: 17px;
 }
-nav button:hover {
-  background: #f0e9ec;
+.header-nav button:hover {
+  background: var(--soft);
 }
-nav button[aria-current="page"] {
+.header-nav button[aria-current="page"] {
   color: #9e3e63;
-  background: white;
-  box-shadow: 0 1px 4px #4420310b;
-  border-color: #eee5e9;
+  border-bottom: 2px solid var(--accent);
 }
 .card {
   background: white;
@@ -669,9 +657,6 @@ footer .icon {
   .entry-fields > label:first-child {
     flex: 1 0 100%;
   }
-  .tagline {
-    display: none;
-  }
 }
 @media (max-width: 640px) {
   .shell {
@@ -679,6 +664,9 @@ footer .icon {
   }
   .topbar {
     min-height: 76px;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    padding-top: 14px;
   }
   .brand {
     font-size: 21px;
@@ -699,21 +687,22 @@ footer .icon {
   .date {
     font-size: 10px;
   }
-  nav {
-    width: 100%;
-    gap: 2px;
-    margin-bottom: 24px;
-    padding: 4px;
+  .header-nav {
+    order: 1;
+    flex: 0 0 100%;
+    flex-wrap: wrap;
+    gap: 0;
   }
-  nav button {
+  .header-nav button {
     flex: 1;
+    min-height: 44px;
     font-size: 11px;
-    padding: 10px 7px;
-    gap: 5px;
+    padding: 8px 5px;
+    gap: 4px;
   }
-  nav button .icon {
-    width: 15px;
-    height: 15px;
+  .header-nav button .icon {
+    width: 14px;
+    height: 14px;
   }
   .home-layout {
     display: flex;
