@@ -274,8 +274,8 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await page.getByRole("button", { name: "行動ルール", exact: true }).click();
   await page.getByRole("button", { name: "追加する", exact: true }).click();
   const statusOptions = page
-    .getByLabel("ステータス", { exact: true })
-    .getByRole("option");
+    .getByRole("combobox", { name: "ステータス", exact: true })
+    .locator("option");
   await expect(statusOptions).toHaveText([...STATUS_NAMES]);
   await capture("rules");
   expect(
