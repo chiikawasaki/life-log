@@ -41,6 +41,7 @@ export type Goal = {
   created_at: string;
   completed_at: string | null;
   required_status_ids: string[];
+  due_on: string | null;
 };
 
 export function loadGoals() {
@@ -52,11 +53,18 @@ export async function createGoal(
   userId: string,
   title: string,
   statusIds: string[],
+  dueOn: string | null,
 ) {
   const { error } = await client()
     .from("goals")
     .upsert(
-      { id, user_id: userId, title, required_status_ids: statusIds },
+      {
+        id,
+        user_id: userId,
+        title,
+        required_status_ids: statusIds,
+        due_on: dueOn,
+      },
       { onConflict: "id", ignoreDuplicates: true },
     );
   if (error) throw error;
@@ -66,13 +74,19 @@ export function setGoalCompleted(id: string, completedAt: string | null) {
   return updateGoal(id, { completed_at: completedAt });
 }
 
-export function setGoalStatuses(id: string, statusIds: string[]) {
-  return updateGoal(id, { required_status_ids: statusIds });
+export function setGoalDetails(
+  id: string,
+  statusIds: string[],
+  dueOn: string | null,
+) {
+  return updateGoal(id, { required_status_ids: statusIds, due_on: dueOn });
 }
 
 async function updateGoal(
   id: string,
-  changes: Partial<Pick<Goal, "completed_at" | "required_status_ids">>,
+  changes: Partial<
+    Pick<Goal, "completed_at" | "required_status_ids" | "due_on">
+  >,
 ) {
   const { data, error } = await client()
     .from("goals")

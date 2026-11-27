@@ -141,7 +141,9 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await expect(recordNotice).toBeVisible();
   await expect(recordNotice.getByText("レベルアップ！")).toHaveCount(0);
   await expect(recordNotice).toBeHidden({ timeout: 6000 });
-  await expect(page.getByText(/あと 30 分で達成/)).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "次のポイントまで" }),
+  ).toHaveCount(0);
   await page.getByLabel("分", { exact: true }).fill("30");
   await page
     .locator("form")
@@ -162,6 +164,7 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await activeGoals.getByRole("button", { name: "目標を管理" }).click();
   await page.getByLabel("目標の内容").fill("学会発表");
   const newGoal = page.getByRole("region", { name: "目標を追加" });
+  await newGoal.getByLabel("締め切り（任意）").fill("2026-01-04");
   await newGoal.getByRole("checkbox", { name: "研究", exact: true }).check();
   await newGoal
     .getByRole("checkbox", { name: "コミュ力", exact: true })
@@ -179,19 +182,35 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await expect(
     activeGoals.getByRole("list", { name: "必要なステータス" }),
   ).toContainText("コミュ力");
+  await expect(activeGoals).toContainText("締め切り 2026/01/04");
+  await expect(activeGoals).toContainText("期限超過");
+  const recordCard = page.getByRole("heading", { name: "行動を記録" });
+  const goalBox = (await activeGoals.boundingBox())!;
+  expect(goalBox.y).toBeGreaterThan((await recordCard.boundingBox())!.y);
+  if (testInfo.project.name === "mobile") {
+    const statsBox = (await statusPanel.boundingBox())!;
+    expect(goalBox.y).toBeGreaterThanOrEqual(statsBox.y + statsBox.height);
+  }
   await capture("goals-home");
   await page
     .getByRole("navigation")
     .getByRole("button", { name: "目標", exact: true })
     .click();
-  await activeGoals.getByRole("button", { name: "ステータスを編集" }).click();
+  await activeGoals
+    .getByRole("button", { name: "締め切り・ステータスを編集" })
+    .click();
   await expect(
     activeGoals.getByRole("checkbox", { name: "研究", exact: true }),
   ).toBeChecked();
   await activeGoals
     .getByRole("checkbox", { name: "英語", exact: true })
     .check();
-  await activeGoals.getByRole("button", { name: "ステータスを保存" }).click();
+  await expect(activeGoals.getByLabel("締め切り（任意）")).toHaveValue(
+    "2026-01-04",
+  );
+  await activeGoals.getByLabel("締め切り（任意）").fill("2099-12-31");
+  await activeGoals.getByRole("button", { name: "設定を保存" }).click();
+  await expect(activeGoals).toContainText("締め切り 2099/12/31");
   await expect(
     activeGoals.getByRole("list", { name: "必要なステータス" }),
   ).toContainText("英語");
@@ -199,6 +218,7 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   const completedGoals = page.getByRole("region", { name: "達成した目標" });
   await expect(completedGoals).toContainText("学会発表");
   await expect(completedGoals).toContainText("達成日");
+  await expect(completedGoals).toContainText("締め切り 2099/12/31");
   await expect(activeGoals).not.toContainText("学会発表");
   await capture("goals");
   await page.reload();

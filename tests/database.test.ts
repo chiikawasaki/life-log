@@ -53,6 +53,9 @@ beforeAll(async () => {
   await db.exec(
     readFileSync("supabase/migrations/202611270003_goal_statuses.sql", "utf8"),
   );
+  await db.exec(
+    readFileSync("supabase/migrations/202611280001_goal_deadlines.sql", "utf8"),
+  );
   await db.exec("set role authenticated");
   await db.query("select public.initialize_statuses()");
 }, 20000);
@@ -260,4 +263,21 @@ it("既存目標に複数のステータスを設定でき、不明・重複ID�
     ).rejects.toThrow("Invalid goal statuses");
   }
   expect((await read()).rows).toEqual([{ required_status_ids: ids }]);
+});
+
+it("既存の目標に締め切りを設定・解除できる", async () => {
+  const read = () =>
+    db.query("select due_on::text from goals where id = $1", [legacyGoal]);
+  expect((await read()).rows).toEqual([{ due_on: null }]);
+  await db.query("update goals set due_on = '2026-12-31' where id = $1", [
+    legacyGoal,
+  ]);
+  expect((await read()).rows).toEqual([{ due_on: "2026-12-31" }]);
+  await expect(
+    db.query("update goals set due_on = 'infinity' where id = $1", [
+      legacyGoal,
+    ]),
+  ).rejects.toThrow();
+  await db.query("update goals set due_on = null where id = $1", [legacyGoal]);
+  expect((await read()).rows).toEqual([{ due_on: null }]);
 });

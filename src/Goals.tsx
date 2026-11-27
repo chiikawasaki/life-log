@@ -4,15 +4,62 @@ import {
   friendlyError,
   loadGoals,
   setGoalCompleted,
-  setGoalStatuses,
+  setGoalDetails,
   type Goal,
 } from "./api";
-import type { Status } from "./domain";
+import { today, validDate, type Status } from "./domain";
 
 const goalDate = new Intl.DateTimeFormat("ja-JP", {
   dateStyle: "medium",
   timeZone: "Asia/Tokyo",
 });
+
+function DeadlineInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <label className="d-block" style={{ maxWidth: "16rem" }}>
+      締め切り（任意）
+      <input
+        className="form-control mt-1"
+        type="date"
+        min="0001-01-01"
+        max="9999-12-31"
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  );
+}
+
+function GoalDeadline({
+  dueOn,
+  active = false,
+}: {
+  dueOn: string | null;
+  active?: boolean;
+}) {
+  if (!dueOn) return null;
+  const current = today();
+  return (
+    <div className="small text-body-secondary">
+      締め切り <time dateTime={dueOn}>{dueOn.replaceAll("-", "/")}</time>
+      {active && dueOn < current && (
+        <span className="ms-2 text-danger fw-semibold">期限超過</span>
+      )}
+      {active && dueOn === current && (
+        <span className="ms-2 fw-semibold">今日まで</span>
+      )}
+    </div>
+  );
+}
 
 function StatusPicker({
   statuses,
@@ -89,8 +136,13 @@ export function Goals({
 }) {
   const [goals, setGoals] = useState<Goal[]>();
   const [title, setTitle] = useState("");
+  const [dueOn, setDueOn] = useState("");
   const [requiredStatuses, setRequiredStatuses] = useState<string[]>([]);
-  const [editor, setEditor] = useState<{ id: string; statusIds: string[] }>();
+  const [editor, setEditor] = useState<{
+    id: string;
+    statusIds: string[];
+    dueOn: string;
+  }>();
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -130,13 +182,15 @@ export function Goals({
   function submit(event: FormEvent) {
     event.preventDefault();
     const trimmed = title.trim();
-    if (!trimmed || trimmed.length > 120) return;
+    if (!trimmed || trimmed.length > 120 || (dueOn && !validDate(dueOn)))
+      return;
     void run(async () => {
       const id = (draftId.current ??= crypto.randomUUID());
-      await createGoal(id, userId, trimmed, requiredStatuses);
+      await createGoal(id, userId, trimmed, requiredStatuses, dueOn || null);
       setGoals(await loadGoals());
       draftId.current = undefined;
       setTitle("");
+      setDueOn("");
       setRequiredStatuses([]);
     });
   }
@@ -157,11 +211,13 @@ export function Goals({
     );
   }
 
-  function saveStatuses(event: FormEvent) {
+  function saveDetails(event: FormEvent) {
     event.preventDefault();
-    if (!editor) return;
+    if (!editor || (editor.dueOn && !validDate(editor.dueOn))) return;
     void run(async () => {
-      replaceGoal(await setGoalStatuses(editor.id, editor.statusIds));
+      replaceGoal(
+        await setGoalDetails(editor.id, editor.statusIds, editor.dueOn || null),
+      );
       setEditor(undefined);
     });
   }
@@ -170,7 +226,11 @@ export function Goals({
 
   const active = goals
     ?.filter((goal) => !goal.completed_at)
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    .sort(
+      (a, b) =>
+        (a.due_on ?? "9999-12-31").localeCompare(b.due_on ?? "9999-12-31") ||
+        b.created_at.localeCompare(a.created_at),
+    );
   const completed = goals
     ?.flatMap((goal) =>
       goal.completed_at ? [{ ...goal, completed_at: goal.completed_at }] : [],
@@ -220,6 +280,14 @@ export function Goals({
                 }}
               />
             </label>
+            <DeadlineInput
+              value={dueOn}
+              disabled={busy || !goals}
+              onChange={(value) => {
+                setDueOn(value);
+                draftId.current = undefined;
+              }}
+            />
             <StatusPicker
               statuses={statuses}
               selected={requiredStatuses}
@@ -272,6 +340,7 @@ export function Goals({
             >
               <div>
                 <div className="text-break">{goal.title}</div>
+                <GoalDeadline dueOn={goal.due_on} active />
                 <GoalStatuses goal={goal} statuses={statuses} />
               </div>
               {view === "manage" && (
@@ -284,10 +353,11 @@ export function Goals({
                       setEditor({
                         id: goal.id,
                         statusIds: goal.required_status_ids ?? [],
+                        dueOn: goal.due_on ?? "",
                       })
                     }
                   >
-                    ステータスを編集
+                    締め切り・ステータスを編集
                   </button>
                   <button
                     className="btn btn-outline-secondary btn-sm"
@@ -305,19 +375,24 @@ export function Goals({
               {view === "manage" && editor?.id === goal.id && (
                 <form
                   className="w-100 d-grid gap-2 mt-2"
-                  onSubmit={saveStatuses}
+                  onSubmit={saveDetails}
                 >
+                  <DeadlineInput
+                    value={editor.dueOn}
+                    disabled={busy}
+                    onChange={(value) => setEditor({ ...editor, dueOn: value })}
+                  />
                   <StatusPicker
                     statuses={statuses}
                     selected={editor.statusIds}
                     disabled={busy}
                     onChange={(statusIds) =>
-                      setEditor({ id: goal.id, statusIds })
+                      setEditor({ ...editor, statusIds })
                     }
                   />
                   <div className="d-flex gap-2">
                     <button className="btn btn-primary btn-sm" disabled={busy}>
-                      ステータスを保存
+                      設定を保存
                     </button>
                     <button
                       className="btn btn-outline-secondary btn-sm"
@@ -361,6 +436,7 @@ export function Goals({
                   >
                     達成日 {goalDate.format(new Date(goal.completed_at))}
                   </time>
+                  <GoalDeadline dueOn={goal.due_on} />
                   <GoalStatuses goal={goal} statuses={statuses} />
                 </div>
                 <button
