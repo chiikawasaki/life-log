@@ -120,12 +120,6 @@ export default function App() {
       setBusy(false);
     }
   }
-  async function logout() {
-    if (!db) return;
-    const { error: err } = await db.auth.signOut();
-    if (err) setError(friendlyError(err));
-  }
-  const summary = summarize(data);
   function saveRecord(
     entry: Omit<Entry, "created_at">,
     userId: string,
@@ -142,6 +136,12 @@ export default function App() {
       },
     );
   }
+  async function logout() {
+    if (!db) return;
+    const { error: err } = await db.auth.signOut();
+    if (err) setError(friendlyError(err));
+  }
+  const summary = summarize(data);
   const series = dailyPoints(data, periodDays(period, end));
   const chartMax = Math.max(1, ...series.map((point) => point.xp));
   const history = [...data.entries].sort(
