@@ -16,6 +16,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
     "bootstrap": "^5.3.9",
+    "chart.js": "^4.6.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

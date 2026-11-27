@@ -115,53 +115,19 @@ body {
 .record-notice::backdrop {
   background-color: rgba(75, 30, 49, 0.45);
 }
-.activity-calendar {
-  display: grid;
-  grid-template-columns: 1.75rem;
-  grid-auto-columns: clamp(1.25rem, 5vw, 1.75rem);
-  grid-template-rows: repeat(7, clamp(1.25rem, 5vw, 1.75rem));
-  grid-auto-flow: column;
-  align-items: center;
-  gap: 6px;
+.reflection-chart {
+  position: relative;
+  height: clamp(15rem, 45vw, 21rem);
 }
-.activity-weekday {
-  color: var(--bs-secondary-color);
-  font-size: 12px;
+.reflection-doughnut {
+  height: 13rem;
 }
-.activity-day,
-.activity-swatch {
-  border: 1px solid #233e251a;
-  border-radius: 4px;
-  background: var(--activity-color, #f0eeef);
-}
-.activity-day {
-  width: 100%;
-  height: 100%;
-  padding: 0;
-}
-.activity-day:hover {
-  background: var(--activity-color, #f0eeef);
-  border-color: #386650;
-}
-.activity-day[aria-pressed="true"] {
-  box-shadow: inset 0 0 0 2px #386650;
-}
-.activity-day:focus-visible {
-  outline-offset: 1px;
-}
-.chart [data-level="1"] {
-  --activity-color: #d5efdc;
-}
-.chart [data-level="2"] {
-  --activity-color: #a0d9ae;
-}
-.chart [data-level="3"] {
-  --activity-color: #5eb579;
-}
-.chart [data-level="4"] {
-  --activity-color: #2b7b47;
-}
-.activity-swatch {
-  width: 0.75rem;
-  height: 0.75rem;
+.reflection-period .btn-outline-primary {
+  --bs-btn-color: var(--rose);
+  --bs-btn-border-color: var(--rose);
+  --bs-btn-hover-bg: var(--rose-hover);
+  --bs-btn-hover-border-color: var(--rose-hover);
+  --bs-btn-active-bg: var(--rose);
+  --bs-btn-active-border-color: var(--rose);
+  --bs-btn-focus-shadow-rgb: var(--rose-rgb);
 }

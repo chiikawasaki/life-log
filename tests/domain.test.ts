@@ -126,17 +126,17 @@ describe("成長の計算", () => {
       ]),
     ).toEqual([{ day: "2026-01-01", xp: 1, count: 1 }]);
   });
-  it("週は月曜から・月は1日から（年境界も対応）", () => {
-    expect(periodDays("week", "2026-01-01")).toEqual([
-      "2025-12-29",
-      "2025-12-30",
-      "2025-12-31",
-      "2026-01-01",
-    ]);
-    expect(periodDays("month", "2026-01-02")).toEqual([
-      "2026-01-01",
-      "2026-01-02",
-    ]);
+  it("終了日を含む1週間・1ヶ月・3ヶ月を集計する", () => {
+    const week = periodDays("week", "2026-01-01");
+    expect(week).toHaveLength(7);
+    expect(week[0]).toBe("2025-12-26");
+    expect(week.at(-1)).toBe("2026-01-01");
+    const month = periodDays("month", "2024-03-31");
+    expect(month[0]).toBe("2024-03-01");
+    expect(month).toHaveLength(31);
+    const quarter = periodDays("quarter", "2026-01-04");
+    expect(quarter[0]).toBe("2025-10-05");
+    expect(quarter.at(-1)).toBe("2026-01-04");
   });
   it.each([0, -1, 0.5, Infinity, NaN, 1000001])(
     "不正数量 %s を拒否する",
