@@ -12,8 +12,19 @@ type IconName =
   | "home"
   | "work"
   | "arrow"
-  | "plus";
+  | "plus"
+  | "flask"
+  | "sparkles"
+  | "code"
+  | "server"
+  | "check";
 const paths: Record<IconName, string> = {
+  flask: "M9 3h6M10 3v7l-6 9a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2l-6-9V3M7 15h10",
+  sparkles:
+    "M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3ZM19 3v4m-2-2h4",
+  code: "M8 6l-6 6 6 6m8-12 6 6-6 6m-2-15-4 18",
+  server: "M4 4h16v6H4V4Zm0 10h16v6H4v-6Zm3-7h.01M7 17h.01",
+  check: "M5 12l4 4L19 6M5 21h14",
   write: "M12 20h8M16 3l5 5L9 20l-6 1 1-6L16 3ZM14 5l5 5",
   history: "M3 11a9 9 0 1 1 2 7M3 4v7h7M12 7v5l3 2",
   sliders: "M4 7h8m4 0h4M4 17h3m4 0h9M12 4v6M7 14v6",
@@ -54,14 +65,22 @@ export function Icon({
     </svg>
   );
 }
-export const statusIcons: IconName[] = [
-  "book",
-  "heart",
-  "chat",
-  "art",
-  "home",
-  "work",
-];
+export const statusIcons: Partial<Record<string, IconName>> = {
+  デザイン: "art",
+  研究: "flask",
+  論文: "write",
+  その他知識: "book",
+  生活力: "home",
+  コミュ力: "chat",
+  体力: "heart",
+  副業: "work",
+  AI: "sparkles",
+  フロントエンド: "code",
+  バックエンド: "server",
+  テスト: "check",
+  知識: "book",
+  芸術: "art",
+};
 export const navIcons: IconName[] = [
   "write",
   "history",

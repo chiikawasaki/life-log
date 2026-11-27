@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
+import { STATUS_NAMES } from "../src/domain";
 import { afterAll, beforeAll, expect, it } from "vitest";
 const db = new PGlite();
 const owner = "11111111-1111-4111-8111-111111111111";
@@ -8,6 +9,7 @@ const stranger = "22222222-2222-4222-8222-222222222222";
 let status: string;
 let version: string;
 let rule: string;
+let art: string;
 beforeAll(async () => {
   await db.exec(
     `create role anon; create role authenticated; create schema auth; create table auth.users(id uuid primary key); create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub', true),'')::uuid$$; grant usage on schema public,auth to authenticated,anon; grant execute on function auth.uid() to authenticated,anon; insert into auth.users values('${owner}'),('${stranger}');`,
@@ -33,13 +35,37 @@ beforeAll(async () => {
   ).rows[0].save_rule;
   version = (await db.query<{ id: string }>("select id from rule_versions"))
     .rows[0].id;
+  art = (
+    await db.query<{ id: string }>("select id from statuses where name='芸術'")
+  ).rows[0].id;
+  await db.exec("reset role");
+  await db.exec(
+    readFileSync(
+      "supabase/migrations/202611270002_status_categories.sql",
+      "utf8",
+    ),
+  );
+  await db.exec("set role authenticated");
+  await db.query("select public.initialize_statuses()");
 }, 20000);
 afterAll(async () => {
   await db.close();
 });
-it("初期6ステータスの作成は繰り返しても重複しない", async () => {
+it("指定順の12ステータスを繰り返し初期化しても重複しない", async () => {
   await db.query("select initialize_statuses()");
-  expect((await db.query("select * from statuses")).rows).toHaveLength(6);
+  const { rows } = await db.query<{ id: string; name: string }>(
+    "select id, name from statuses order by display_order",
+  );
+  expect(rows.map(({ name }) => name)).toEqual(STATUS_NAMES);
+  expect(rows.find(({ name }) => name === "その他知識")?.id).toBe(status);
+  expect(rows.find(({ name }) => name === "デザイン")?.id).toBe(art);
+  expect(
+    (
+      await db.query("select status_id from activity_rules where id = $1", [
+        rule,
+      ])
+    ).rows,
+  ).toEqual([{ status_id: status }]);
 });
 it("所有者が記録・訂正・削除できる", async () => {
   const id = "33333333-3333-4333-8333-333333333333";

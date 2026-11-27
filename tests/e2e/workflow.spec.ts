@@ -43,7 +43,7 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
       id: "rule",
       user_id: owner,
       name: "勉強",
-      status_id: "status0",
+      status_id: statuses.find(({ name }) => name === "その他知識")!.id,
       archived_at: null,
     },
   ];
@@ -150,6 +150,8 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await expect(recordNotice).toBeVisible();
   await recordNotice.getByRole("button", { name: "閉じる" }).click();
   await expect(page.locator(".hero")).toContainText("累計 1 XP");
+  const statusPanel = page.getByRole("region", { name: "ステータス" });
+  await expect(statusPanel.getByRole("heading")).toHaveText([...STATUS_NAMES]);
   await capture("home");
   expect(
     await page.evaluate(
@@ -271,6 +273,10 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await expect(page.getByRole("heading", { name: "今日の記録" })).toBeVisible();
   await page.getByRole("button", { name: "行動ルール", exact: true }).click();
   await page.getByRole("button", { name: "追加する", exact: true }).click();
+  const statusOptions = page
+    .getByLabel("ステータス", { exact: true })
+    .getByRole("option");
+  await expect(statusOptions).toHaveText([...STATUS_NAMES]);
   await capture("rules");
   expect(
     await page.evaluate(

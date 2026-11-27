@@ -362,11 +362,11 @@ export default function App() {
                     aria-label="ステータス"
                     className="row row-cols-2 row-cols-sm-3 g-2 mt-2"
                   >
-                    {data.statuses.map((s, i) => (
+                    {data.statuses.map((s) => (
                       <article className="col" key={s.id}>
                         <div className="card h-100 p-3">
                           <span className="app-icon bg-primary-subtle text-primary">
-                            <Icon name={statusIcons[i % statusIcons.length]} />
+                            <Icon name={statusIcons[s.name] ?? "chart"} />
                           </span>
                           <h3 className="h6 mt-2">{s.name}</h3>
                           <p className="mb-0">
