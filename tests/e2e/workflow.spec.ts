@@ -139,7 +139,18 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.getByRole("button", { name: "履歴", exact: true }).click();
+  const headerNav = page
+    .getByRole("banner")
+    .getByRole("navigation", { name: "メインメニュー" });
+  await expect(
+    headerNav.getByRole("button", { name: "記録する" }),
+  ).toHaveAttribute("aria-current", "page");
+  const historyLink = headerNav.getByRole("button", {
+    name: "履歴",
+    exact: true,
+  });
+  await historyLink.click();
+  await expect(historyLink).toHaveAttribute("aria-current", "page");
   await expect(page.locator(".list-item")).toHaveCount(2);
   await page.getByRole("button", { name: "訂正", exact: true }).first().click();
   await page.getByLabel("分", { exact: true }).fill("1800");
