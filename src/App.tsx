@@ -157,44 +157,58 @@ export default function App() {
       b.created_at.localeCompare(a.created_at),
   );
   return (
-    <div className="shell">
-      <header className="topbar">
-        <a href="#" className="brand" onClick={() => setTab("ホーム")}>
-          <span className="brand-mark">
-            <Icon name="leaf" />
-          </span>
-          life-log
-        </a>
-        {session && (
-          <nav className="header-nav" aria-label="メインメニュー">
-            {tabs.map((t, i) => (
-              <button
-                key={t}
-                aria-current={tab === t ? "page" : undefined}
-                disabled={busy}
-                onClick={() => {
-                  setTab(t);
-                  setEditing(undefined);
-                }}
-              >
-                <Icon name={navIcons[i]} />
-                {t === "ホーム" ? "記録する" : t}
-              </button>
-            ))}
-          </nav>
-        )}
-        {session && (
-          <button className="text-button" onClick={logout} disabled={busy}>
-            ログアウト
-          </button>
-        )}
+    <div className="d-flex min-vh-100 flex-column">
+      <header className="navbar bg-white border-bottom">
+        <div className="container gap-2">
+          <a
+            href="#"
+            className="navbar-brand d-inline-flex align-items-center gap-2 fw-semibold"
+            onClick={() => setTab("ホーム")}
+          >
+            <span className="app-icon bg-primary text-white">
+              <Icon name="leaf" />
+            </span>
+            life-log
+          </a>
+          {session && (
+            <nav
+              className="nav nav-pills header-nav gap-1"
+              aria-label="メインメニュー"
+            >
+              {tabs.map((t, i) => (
+                <button
+                  key={t}
+                  className={`nav-link ${tab === t ? "active" : ""}`}
+                  aria-current={tab === t ? "page" : undefined}
+                  disabled={busy}
+                  onClick={() => {
+                    setTab(t);
+                    setEditing(undefined);
+                  }}
+                >
+                  <Icon name={navIcons[i]} />
+                  {t === "ホーム" ? "記録する" : t}
+                </button>
+              ))}
+            </nav>
+          )}
+          {session && (
+            <button
+              className="btn btn-outline-secondary btn-sm ms-auto"
+              onClick={logout}
+              disabled={busy}
+            >
+              ログアウト
+            </button>
+          )}
+        </div>
       </header>
-      <main>
+      <main className="container py-4 py-lg-5 flex-grow-1">
         {checking ? (
           <p role="status">読み込み中…</p>
         ) : !db ? (
-          <section className="card">
-            <h1>接続設定が必要です</h1>
+          <section className="card shadow-sm p-3 p-md-4">
+            <h1 className="h2">接続設定が必要です</h1>
             <p>
               開発環境にSupabaseのURLと公開キーを設定して、サーバーを再起動してください。
             </p>
@@ -203,10 +217,10 @@ export default function App() {
           <Login error={error} setError={setError} />
         ) : (
           <>
-            <div className="intro">
+            <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
               <div>
-                <h1>{tab === "ホーム" ? "今日の記録" : tab}</h1>
-                <p className="muted">
+                <h1 className="h2">{tab === "ホーム" ? "今日の記録" : tab}</h1>
+                <p className="text-body-secondary mb-0">
                   {tab === "ホーム"
                     ? "できたことを、ひとつずつ。"
                     : tab === "履歴"
@@ -216,13 +230,18 @@ export default function App() {
                         : "少し離れて、眺めてみよう。"}
                 </p>
               </div>
-              <span className="date">{today().replaceAll("-", " / ")}</span>
+              <span className="small text-body-secondary text-nowrap">
+                {today().replaceAll("-", " / ")}
+              </span>
             </div>
             {error && (
-              <div role="alert" className="notice error">
+              <div
+                role="alert"
+                className="alert alert-danger d-flex flex-wrap align-items-center gap-2"
+              >
                 {error}{" "}
                 <button
-                  className="secondary"
+                  className="btn btn-outline-secondary"
                   disabled={loading || busy}
                   onClick={() => void refresh()}
                 >
@@ -231,7 +250,7 @@ export default function App() {
               </div>
             )}
             {message && (
-              <div role="status" className="notice success">
+              <div role="status" className="alert alert-success">
                 {message}
               </div>
             )}
@@ -242,66 +261,23 @@ export default function App() {
               />
             )}
             {loading && (
-              <p role="status" className="muted">
+              <p role="status" className="text-body-secondary">
                 最新の記録を読み込み中…
               </p>
             )}
             {tab === "ホーム" && (
-              <div className="home-layout">
-                <aside className="growth-panel" aria-label="成長のまとめ">
-                  <section className="hero card">
-                    <div>
-                      <span className="section-kicker">
-                        <Icon name="leaf" />
-                        これまでの積み重ね
-                      </span>
-                      <p className="xp-total">
-                        これまでの努力 <strong>{summary.xp}</strong> XP
-                      </p>
-                    </div>
-                    <div className="level">
-                      <span>レベル</span>
-                      <strong>{summary.level}</strong>
-                    </div>
-                    <div className="level-meter">
-                      <div className="between">
-                        <span>次のレベルまであと {summary.next} XP</span>
-                        <span>{summary.levelProgress} / 15</span>
-                      </div>
-                      <progress
-                        aria-label="次のレベルへの進捗"
-                        value={summary.levelProgress}
-                        max={15}
-                      />
-                    </div>
-                  </section>
-                  <section aria-label="ステータス" className="stats">
-                    {data.statuses.map((s, i) => (
-                      <article className="stat" key={s.id}>
-                        <span className="stat-icon">
-                          <Icon name={statusIcons[i % statusIcons.length]} />
-                        </span>
-                        <h3>{s.name}</h3>
-                        <p>
-                          <strong>{summary.points[s.id] ?? 0}</strong>
-                          <span> pt</span>
-                        </p>
-                      </article>
-                    ))}
-                  </section>
-                  <p className="growth-note">
-                    休む日があっても、積み重ねはそのまま。
-                  </p>
-                </aside>
-                <div className="columns">
-                  <section className="card record-card">
-                    <div className="record-heading">
-                      <span className="section-icon">
+              <div className="row g-4">
+                <div className="col-lg-7 d-grid gap-4 align-content-start">
+                  <section className="card shadow-sm p-3 p-md-4">
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                      <span className="app-icon bg-primary-subtle text-primary">
                         <Icon name="write" />
                       </span>
-                      <h2>今日は何をしましたか？</h2>
+                      <h2 className="h5 mb-0">今日は何をしましたか？</h2>
                     </div>
-                    <p className="muted">時間や回数を入れて、さっと記録。</p>
+                    <p className="text-body-secondary">
+                      時間や回数を入れて、さっと記録。
+                    </p>
                     <EntryForm
                       key={data.versions.map((v) => v.id).join()}
                       data={data}
@@ -311,47 +287,55 @@ export default function App() {
                       }
                     />
                   </section>
-                  <section className="next-panel">
-                    <h2>次のポイントまで</h2>
-                    <p className="muted">
+                  <section className="card shadow-sm p-3 p-md-4">
+                    <h2 className="h5">次のポイントまで</h2>
+                    <p className="text-body-secondary">
                       途中の分も、ちゃんと貯まっています。
                     </p>
-                    {summary.progress
-                      .filter(
-                        (v) =>
-                          data.rules.some(
-                            (r) => r.id === v.rule_id && !r.archived_at,
-                          ) &&
-                          !data.versions.some(
-                            (other) =>
-                              other.rule_id === v.rule_id &&
-                              other.created_at > v.created_at,
-                          ),
-                      )
-                      .map((v) => (
-                        <article className="goal" key={v.id}>
-                          <div className="between">
-                            <strong>
-                              {data.rules.find((r) => r.id === v.rule_id)?.name}
-                            </strong>
-                            <span>＋{v.reward_points} pt</span>
-                          </div>
-                          <progress
-                            aria-label={`${data.rules.find((r) => r.id === v.rule_id)?.name}の進捗`}
-                            max={v.required_quantity}
-                            value={v.remainder}
-                          />
-                          <small>
-                            あと {v.remaining} {v.unit}で達成 · 累計{" "}
-                            {v.quantity} {v.unit}
-                          </small>
-                        </article>
-                      ))}
+                    <div className="list-group list-group-flush">
+                      {summary.progress
+                        .filter(
+                          (v) =>
+                            data.rules.some(
+                              (r) => r.id === v.rule_id && !r.archived_at,
+                            ) &&
+                            !data.versions.some(
+                              (other) =>
+                                other.rule_id === v.rule_id &&
+                                other.created_at > v.created_at,
+                            ),
+                        )
+                        .map((v) => (
+                          <article
+                            className="list-group-item px-0 py-3"
+                            key={v.id}
+                          >
+                            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                              <strong>
+                                {
+                                  data.rules.find((r) => r.id === v.rule_id)
+                                    ?.name
+                                }
+                              </strong>
+                              <span>＋{v.reward_points} pt</span>
+                            </div>
+                            <Progress
+                              label={`${data.rules.find((r) => r.id === v.rule_id)?.name}の進捗`}
+                              max={v.required_quantity}
+                              value={v.remainder}
+                            />
+                            <small>
+                              あと {v.remaining} {v.unit}で達成 · 累計{" "}
+                              {v.quantity} {v.unit}
+                            </small>
+                          </article>
+                        ))}
+                    </div>
                     {!data.rules.some((r) => !r.archived_at) && (
-                      <div className="empty">
+                      <div className="alert alert-light border mb-0">
                         「勉強120分で＋1」など、自分に合うルールを作りましょう。
                         <button
-                          className="secondary"
+                          className="btn btn-outline-secondary d-block mt-2"
                           onClick={() => {
                             setTab("行動ルール");
                             setRuleEditor("new");
@@ -363,13 +347,66 @@ export default function App() {
                     )}
                   </section>
                 </div>
+                <aside className="col-lg-5" aria-label="成長のまとめ">
+                  <section className="hero card bg-primary-subtle border-primary-subtle p-3 p-md-4 shadow-sm">
+                    <div>
+                      <span className="d-inline-flex align-items-center gap-2 small text-primary-emphasis">
+                        <Icon name="leaf" />
+                        これまでの積み重ね
+                      </span>
+                      <p className="fs-5 mb-0">
+                        これまでの努力 <strong>{summary.xp}</strong> XP
+                      </p>
+                    </div>
+                    <div className="d-flex align-items-baseline gap-2 my-3">
+                      <span>レベル</span>
+                      <strong className="display-5 fw-semibold">
+                        {summary.level}
+                      </strong>
+                    </div>
+                    <div className="small">
+                      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <span>次のレベルまであと {summary.next} XP</span>
+                        <span>{summary.levelProgress} / 15</span>
+                      </div>
+                      <Progress
+                        label="次のレベルへの進捗"
+                        value={summary.levelProgress}
+                        max={15}
+                      />
+                    </div>
+                  </section>
+                  <section
+                    aria-label="ステータス"
+                    className="row row-cols-2 row-cols-sm-3 g-2 mt-2"
+                  >
+                    {data.statuses.map((s, i) => (
+                      <article className="col" key={s.id}>
+                        <div className="card h-100 p-3">
+                          <span className="app-icon bg-primary-subtle text-primary">
+                            <Icon name={statusIcons[i % statusIcons.length]} />
+                          </span>
+                          <h3 className="h6 mt-2">{s.name}</h3>
+                          <p className="mb-0">
+                            <strong>{summary.points[s.id] ?? 0}</strong>
+                            <span className="text-body-secondary"> pt</span>
+                          </p>
+                        </div>
+                      </article>
+                    ))}
+                  </section>
+                  <p className="text-body-secondary small mt-3 mb-0">
+                    休む日があっても、積み重ねはそのまま。
+                  </p>
+                </aside>
               </div>
             )}
             {tab === "行動ルール" && (
-              <section className="card">
-                <div className="between">
-                  <h2>行動ルール</h2>
+              <section className="card shadow-sm p-3 p-md-4">
+                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                  <h2 className="h5 mb-0">行動ルール</h2>
                   <button
+                    className="btn btn-primary d-inline-flex align-items-center gap-1"
                     disabled={busy || loading || !data.statuses.length}
                     onClick={() => setRuleEditor("new")}
                   >
@@ -377,7 +414,7 @@ export default function App() {
                     追加する
                   </button>
                 </div>
-                <p className="muted">
+                <p className="text-body-secondary">
                   勉強は120分で＋1から。必要な量とポイントは自由に設定できます。
                 </p>
                 {ruleEditor && (
@@ -398,74 +435,81 @@ export default function App() {
                     }
                   />
                 )}
-                {data.rules
-                  .filter((r) => !r.archived_at)
-                  .map((r) => {
-                    const v = data.versions
-                      .filter((v) => v.rule_id === r.id)
-                      .sort((a, b) =>
-                        b.created_at.localeCompare(a.created_at),
-                      )[0];
-                    return (
-                      <article className="list-item" key={r.id}>
-                        <div>
-                          <h3>{r.name}</h3>
-                          <p className="muted">
-                            {
-                              data.statuses.find((s) => s.id === r.status_id)
-                                ?.name
-                            }{" "}
-                            · {v?.required_quantity}
-                            {v?.unit}で＋{v?.reward_points}
-                          </p>
-                        </div>
-                        <div className="actions">
-                          <button
-                            className="secondary"
-                            disabled={busy}
-                            onClick={() => setRuleEditor(r)}
-                          >
-                            変更
-                          </button>
-                          <button
-                            className="text-button"
-                            disabled={busy}
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  "この行動を非表示にしますか？過去の記録とポイントは残ります。",
+                <div className="list-group list-group-flush">
+                  {data.rules
+                    .filter((r) => !r.archived_at)
+                    .map((r) => {
+                      const v = data.versions
+                        .filter((v) => v.rule_id === r.id)
+                        .sort((a, b) =>
+                          b.created_at.localeCompare(a.created_at),
+                        )[0];
+                      return (
+                        <article
+                          className="list-item list-group-item d-flex flex-wrap justify-content-between align-items-start gap-3 px-0 py-3"
+                          key={r.id}
+                        >
+                          <div>
+                            <h3 className="h6 text-break">{r.name}</h3>
+                            <p className="text-body-secondary">
+                              {
+                                data.statuses.find((s) => s.id === r.status_id)
+                                  ?.name
+                              }{" "}
+                              · {v?.required_quantity}
+                              {v?.unit}で＋{v?.reward_points}
+                            </p>
+                          </div>
+                          <div className="d-flex flex-wrap gap-2">
+                            <button
+                              className="btn btn-outline-secondary"
+                              disabled={busy}
+                              onClick={() => setRuleEditor(r)}
+                            >
+                              変更
+                            </button>
+                            <button
+                              className="btn btn-outline-danger"
+                              disabled={busy}
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    "この行動を非表示にしますか？過去の記録とポイントは残ります。",
+                                  )
                                 )
-                              )
-                                void mutate(async () => {
-                                  const { error: err } = await db!
-                                    .from("activity_rules")
-                                    .update({
-                                      archived_at: new Date().toISOString(),
-                                    })
-                                    .eq("id", r.id);
-                                  if (err) throw err;
-                                }, "行動を非表示にしました。").catch(() => {});
-                            }}
-                          >
-                            非表示
-                          </button>
-                        </div>
-                      </article>
-                    );
-                  })}
+                                  void mutate(async () => {
+                                    const { error: err } = await db!
+                                      .from("activity_rules")
+                                      .update({
+                                        archived_at: new Date().toISOString(),
+                                      })
+                                      .eq("id", r.id);
+                                    if (err) throw err;
+                                  }, "行動を非表示にしました。").catch(
+                                    () => {},
+                                  );
+                              }}
+                            >
+                              非表示
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                </div>
                 {!data.rules.length && (
-                  <p className="empty">
+                  <p className="alert alert-light border mb-0">
                     まだ行動ルールはありません。最初のひとつを追加しましょう。
                   </p>
                 )}
               </section>
             )}
             {tab === "履歴" && (
-              <section className="card">
-                <div className="between">
-                  <h2>これまでの記録</h2>
+              <section className="card shadow-sm p-3 p-md-4">
+                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                  <h2 className="h5 mb-0">これまでの記録</h2>
                   <button
-                    className="secondary"
+                    className="btn btn-outline-secondary"
                     disabled={busy || loading}
                     onClick={() => void refresh()}
                   >
@@ -473,8 +517,8 @@ export default function App() {
                   </button>
                 </div>
                 {editing && (
-                  <div className="inset">
-                    <h3>記録を訂正</h3>
+                  <div className="bg-body-tertiary border rounded p-3 my-3">
+                    <h3 className="h6">記録を訂正</h3>
                     <EntryForm
                       key={editing.id}
                       data={data}
@@ -488,70 +532,81 @@ export default function App() {
                   </div>
                 )}
                 {!history.length && (
-                  <p className="empty">
+                  <p className="alert alert-light border mb-0">
                     まだ記録がありません。今日の小さな一歩から始めましょう。
                   </p>
                 )}
-                {history.map((e) => {
-                  const v = data.versions.find(
-                    (v) => v.id === e.rule_version_id,
-                  );
-                  const r = data.rules.find((r) => r.id === v?.rule_id);
-                  return (
-                    <article className="list-item" key={e.id}>
-                      <div>
-                        <small className="muted">{e.performed_on}</small>
-                        <h3>
-                          {r?.name ?? "行動"}{" "}
-                          <span className="pill">
-                            {e.quantity}
-                            {v?.unit}
-                          </span>
-                        </h3>
-                        {e.note && <p className="note">{e.note}</p>}
-                      </div>
-                      <div className="actions">
-                        <button
-                          className="secondary"
-                          disabled={busy}
-                          onClick={() => setEditing(e)}
-                        >
-                          訂正
-                        </button>
-                        <button
-                          className="text-button"
-                          disabled={busy}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                "この記録を削除しますか？経験値も再計算されます。",
+                <div className="list-group list-group-flush">
+                  {history.map((e) => {
+                    const v = data.versions.find(
+                      (v) => v.id === e.rule_version_id,
+                    );
+                    const r = data.rules.find((r) => r.id === v?.rule_id);
+                    return (
+                      <article
+                        className="list-item list-group-item d-flex flex-wrap justify-content-between align-items-start gap-3 px-0 py-3"
+                        key={e.id}
+                      >
+                        <div>
+                          <small className="text-body-secondary">
+                            {e.performed_on}
+                          </small>
+                          <h3 className="h6 text-break">
+                            {r?.name ?? "行動"}{" "}
+                            <span className="badge text-bg-primary ms-2">
+                              {e.quantity}
+                              {v?.unit}
+                            </span>
+                          </h3>
+                          {e.note && (
+                            <p className="text-break mb-0">{e.note}</p>
+                          )}
+                        </div>
+                        <div className="d-flex flex-wrap gap-2">
+                          <button
+                            className="btn btn-outline-secondary"
+                            disabled={busy}
+                            onClick={() => setEditing(e)}
+                          >
+                            訂正
+                          </button>
+                          <button
+                            className="btn btn-outline-danger"
+                            disabled={busy}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  "この記録を削除しますか？経験値も再計算されます。",
+                                )
                               )
-                            )
-                              void mutate(async () => {
-                                const { error: err } = await db!
-                                  .from("effort_entries")
-                                  .delete()
-                                  .eq("id", e.id);
-                                if (err) throw err;
-                                if (editing?.id === e.id) setEditing(undefined);
-                              }, "記録を削除しました。").catch(() => {});
-                          }}
-                        >
-                          削除
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
+                                void mutate(async () => {
+                                  const { error: err } = await db!
+                                    .from("effort_entries")
+                                    .delete()
+                                    .eq("id", e.id);
+                                  if (err) throw err;
+                                  if (editing?.id === e.id)
+                                    setEditing(undefined);
+                                }, "記録を削除しました。").catch(() => {});
+                            }}
+                          >
+                            削除
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
               </section>
             )}
             {tab === "振り返り" && (
-              <section className="card">
-                <h2>記録のペース</h2>
-                <div className="form-row">
-                  <label>
+              <section className="card shadow-sm p-3 p-md-4">
+                <h2 className="h5">記録のペース</h2>
+                <div className="row g-3 mb-3">
+                  <label className="col-12 col-sm-6 col-lg-4">
                     表示期間
                     <select
+                      className="form-select mt-1"
                       value={period}
                       onChange={(e) => {
                         setPeriod(e.target.value as "week" | "month");
@@ -562,9 +617,10 @@ export default function App() {
                       <option value="month">月</option>
                     </select>
                   </label>
-                  <label>
+                  <label className="col-12 col-sm-6 col-lg-4">
                     この日まで
                     <input
+                      className="form-control mt-1"
                       type="date"
                       value={end}
                       max={today()}
@@ -577,7 +633,7 @@ export default function App() {
                     />
                   </label>
                 </div>
-                <p className="muted">
+                <p className="text-body-secondary">
                   色の濃さは記録件数を表します。マスを選ぶと、その日の件数と獲得XPを確認できます（日付は日本時間）。
                 </p>
                 <div className="chart">
@@ -613,7 +669,10 @@ export default function App() {
                       />
                     ))}
                   </div>
-                  <div className="activity-legend" aria-label="色の凡例">
+                  <div
+                    className="activity-legend d-flex align-items-center flex-wrap gap-1 mt-3 small text-body-secondary"
+                    aria-label="色の凡例"
+                  >
                     <span>0件</span>
                     {activityLevels.map((level) => (
                       <span
@@ -626,7 +685,10 @@ export default function App() {
                     <span>4件以上</span>
                   </div>
                   {selectedPoint && (
-                    <p className="activity-detail" aria-live="polite">
+                    <p
+                      className="activity-detail d-flex flex-wrap gap-3 mt-3 mb-0"
+                      aria-live="polite"
+                    >
                       <time dateTime={selectedPoint.day}>
                         {selectedPoint.day}
                       </time>
@@ -641,9 +703,34 @@ export default function App() {
           </>
         )}
       </main>
-      <footer>
+      <footer className="border-top py-3 text-center text-body-secondary small">
         <Icon name="leaf" /> わたしのペースで。
       </footer>
+    </div>
+  );
+}
+function Progress({
+  label,
+  value,
+  max,
+}: {
+  label: string;
+  value: number;
+  max: number;
+}) {
+  return (
+    <div
+      className="progress my-2"
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuenow={value}
+      aria-valuemax={max}
+    >
+      <div
+        className="progress-bar"
+        style={{ width: `${(value / max) * 100}%` }}
+      />
     </div>
   );
 }
@@ -666,20 +753,29 @@ function RecordNotice({
   return (
     <dialog
       ref={dialogRef}
-      className="record-notice card"
+      className="modal record-notice"
       aria-labelledby="record-notice-title"
       aria-describedby={level === undefined ? undefined : "record-notice-level"}
       onClose={onClose}
     >
-      <h2 id="record-notice-title">記録を保存しました</h2>
-      {level !== undefined && (
-        <p id="record-notice-level" className="record-notice-level">
-          レベルアップ！ <strong>Lv. {level}</strong>
-        </p>
-      )}
-      <form method="dialog">
-        <button>閉じる</button>
-      </form>
+      <div className="modal-content shadow">
+        <div className="modal-header">
+          <h2 id="record-notice-title" className="modal-title h5">
+            記録を保存しました
+          </h2>
+        </div>
+        {level !== undefined && (
+          <div className="modal-body">
+            <p id="record-notice-level" className="mb-0">
+              レベルアップ！{" "}
+              <strong className="badge text-bg-primary">Lv. {level}</strong>
+            </p>
+          </div>
+        )}
+        <form method="dialog" className="modal-footer">
+          <button className="btn btn-primary">閉じる</button>
+        </form>
+      </div>
     </dialog>
   );
 }
@@ -711,16 +807,17 @@ function Login({
     }
   }
   return (
-    <section className="card login">
-      <span className="login-symbol">
+    <section className="card shadow-sm mx-auto p-3 p-md-4 login-card">
+      <span className="app-icon bg-primary text-white mb-3">
         <Icon name="leaf" />
       </span>
-      <h1>おかえりなさい</h1>
-      <p className="muted">今日のできたこと、残していこう。</p>
-      <form className="form" onSubmit={login}>
+      <h1 className="h2">おかえりなさい</h1>
+      <p className="text-body-secondary">今日のできたこと、残していこう。</p>
+      <form className="d-grid gap-3 mb-3" onSubmit={login}>
         <label>
           メールアドレス
           <input
+            className="form-control mt-1"
             type="email"
             autoComplete="username"
             required
@@ -732,6 +829,7 @@ function Login({
         <label>
           パスワード
           <input
+            className="form-control mt-1"
             type="password"
             autoComplete="current-password"
             required
@@ -741,15 +839,15 @@ function Login({
           />
         </label>
         {error && (
-          <p role="alert" className="error">
+          <p role="alert" className="alert alert-danger mb-0">
             {error}
           </p>
         )}
-        <button disabled={pending}>
+        <button className="btn btn-primary" disabled={pending}>
           {pending ? "ログイン中…" : "ログイン"}
         </button>
       </form>
-      <p className="muted">
+      <p className="text-body-secondary">
         <small>あなただけの記録帳です。</small>
       </p>
     </section>

@@ -83,15 +83,16 @@ export function EntryForm({
   }
   if (!versions.length)
     return (
-      <div className="empty">
+      <div className="alert alert-light border mb-0">
         まず「行動ルール」で、記録したい行動を登録しましょう。
       </div>
     );
   return (
-    <form onSubmit={submit} className="form">
+    <form onSubmit={submit} className="d-grid gap-3">
       <label>
         行動
         <select
+          className="form-select mt-1"
           value={versionId}
           disabled={busy || !!entry}
           onChange={(e) => {
@@ -109,10 +110,11 @@ export function EntryForm({
           ))}
         </select>
       </label>
-      <div className="form-row entry-fields">
-        <label>
+      <div className="row g-3">
+        <label className="col-12 col-sm-6">
           実施日
           <input
+            className="form-control mt-1"
             type="date"
             required
             max={today()}
@@ -122,9 +124,10 @@ export function EntryForm({
           />
         </label>
         {minutes && (
-          <label>
+          <label className="col-6 col-sm">
             時間
             <input
+              className="form-control mt-1"
               inputMode="numeric"
               type="number"
               min="0"
@@ -136,9 +139,10 @@ export function EntryForm({
             />
           </label>
         )}
-        <label>
+        <label className="col-6 col-sm">
           {minutes ? "分" : `数量（${version?.unit ?? ""}）`}
           <input
+            className="form-control mt-1"
             inputMode="numeric"
             type="number"
             min="0"
@@ -153,9 +157,10 @@ export function EntryForm({
       </div>
       <label>
         <span>
-          メモ <span className="optional-label">任意</span>
+          メモ <span className="badge text-bg-light border">任意</span>
         </span>
         <textarea
+          className="form-control mt-1"
           maxLength={1000}
           rows={2}
           placeholder="ひとこと残す？"
@@ -165,19 +170,23 @@ export function EntryForm({
         />
       </label>
       {validation && (
-        <p role="alert" className="error">
+        <p role="alert" className="alert alert-danger mb-0">
           {validation}
         </p>
       )}
-      <div className="actions form-actions">
-        <button disabled={busy} type="submit">
+      <div className="d-flex flex-wrap gap-2">
+        <button
+          className="btn btn-primary d-inline-flex align-items-center gap-2"
+          disabled={busy}
+          type="submit"
+        >
           {busy ? "保存中…" : entry ? "変更を保存" : "記録する"}
           <Icon name="arrow" />
         </button>
         {onCancel && (
           <button
             type="button"
-            className="secondary"
+            className="btn btn-outline-secondary"
             disabled={busy}
             onClick={onCancel}
           >
@@ -254,16 +263,22 @@ export function RuleForm({
     }
   }
   return (
-    <form className="form inset" onSubmit={submit}>
-      <h3>{editing ? "ルールを変更" : "新しい行動ルール"}</h3>
+    <form
+      className="d-grid gap-3 bg-body-tertiary border rounded p-3 mb-3"
+      onSubmit={submit}
+    >
+      <h3 className="h6 mb-0">
+        {editing ? "ルールを変更" : "新しい行動ルール"}
+      </h3>
       {editing && (
-        <p className="muted">
+        <p className="text-body-secondary mb-0">
           過去の記録はそのまま残ります。変更前の端数は新しいルールに持ち越されません。ステータスは変更できません。
         </p>
       )}
       <label>
         行動の名前
         <input
+          className="form-control mt-1"
           required
           maxLength={80}
           value={name}
@@ -275,6 +290,7 @@ export function RuleForm({
       <label>
         ステータス
         <select
+          className="form-select mt-1"
           value={status}
           disabled={busy || !!editing}
           onChange={(e) => setStatus(e.target.value)}
@@ -286,10 +302,11 @@ export function RuleForm({
           ))}
         </select>
       </label>
-      <div className="form-row">
-        <label>
+      <div className="row g-3">
+        <label className="col-6 col-sm">
           必要な量
           <input
+            className="form-control mt-1"
             type="number"
             min="1"
             max="1000000"
@@ -300,9 +317,10 @@ export function RuleForm({
             onChange={(e) => setRequired(e.target.value)}
           />
         </label>
-        <label>
+        <label className="col-6 col-sm">
           単位
           <select
+            className="form-select mt-1"
             value={unit}
             disabled={busy}
             onChange={(e) => setUnit(e.target.value)}
@@ -312,9 +330,10 @@ export function RuleForm({
             ))}
           </select>
         </label>
-        <label>
+        <label className="col-6 col-sm">
           ポイント
           <input
+            className="form-control mt-1"
             type="number"
             min="1"
             max="1000000"
@@ -327,15 +346,17 @@ export function RuleForm({
         </label>
       </div>
       {error && (
-        <p role="alert" className="error">
+        <p role="alert" className="alert alert-danger mb-0">
           {error}
         </p>
       )}
-      <div className="actions">
-        <button disabled={busy}>保存する</button>
+      <div className="d-flex flex-wrap gap-2">
+        <button className="btn btn-primary" disabled={busy}>
+          保存する
+        </button>
         <button
           type="button"
-          className="secondary"
+          className="btn btn-outline-secondary"
           disabled={busy}
           onClick={onCancel}
         >
