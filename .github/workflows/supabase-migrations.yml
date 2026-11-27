@@ -38,4 +38,4 @@ jobs:
             echo "::error::Set the PRODUCTION_MIGRATION_DATABASE_URL repository secret before running this workflow."
             exit 1
           fi
-          supabase db push --db-url "$MIGRATION_DB_URL"
+          supabase db push --yes --db-url "$MIGRATION_DB_URL"
