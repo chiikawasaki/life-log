@@ -84,7 +84,7 @@ export function EntryForm({
   if (!versions.length)
     return (
       <div className="alert alert-light border mb-0">
-        まず「行動ルール」で、記録したい行動を登録しましょう。
+        「行動ルール」で記録する行動を追加してください。
       </div>
     );
   return (
@@ -163,7 +163,6 @@ export function EntryForm({
           className="form-control mt-1"
           maxLength={1000}
           rows={2}
-          placeholder="ひとこと残す？"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           disabled={busy}
