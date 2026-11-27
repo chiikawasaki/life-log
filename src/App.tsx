@@ -208,21 +208,20 @@ export default function App() {
           <Login error={error} setError={setError} />
         ) : (
           <>
-            {tab === "目標" && <h1 className="h2 mb-4">目標</h1>}
-            <div
-              className={`${tab === "目標" ? "d-none" : "d-flex"} flex-wrap justify-content-between align-items-start gap-2 mb-4`}
-            >
+            <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
               <div>
                 <h1 className="h2">{tab === "ホーム" ? "今日の記録" : tab}</h1>
-                <p className="text-body-secondary mb-0">
-                  {tab === "ホーム"
-                    ? "できたことを、ひとつずつ。"
-                    : tab === "履歴"
-                      ? "これまでに取り組んだこと。"
-                      : tab === "行動ルール"
-                        ? "自分のペースに合わせて。"
-                        : "少し離れて、眺めてみよう。"}
-                </p>
+                {tab !== "目標" && (
+                  <p className="text-body-secondary mb-0">
+                    {tab === "ホーム"
+                      ? "できたことを、ひとつずつ。"
+                      : tab === "履歴"
+                        ? "これまでに取り組んだこと。"
+                        : tab === "行動ルール"
+                          ? "自分のペースに合わせて。"
+                          : "少し離れて、眺めてみよう。"}
+                  </p>
+                )}
               </div>
               <span className="small text-body-secondary text-nowrap">
                 {today().replaceAll("-", " / ")}
