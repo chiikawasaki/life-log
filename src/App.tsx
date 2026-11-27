@@ -348,9 +348,9 @@ export default function App() {
                   </section>
                 </div>
                 <aside className="col-lg-5" aria-label="成長のまとめ">
-                  <section className="hero card text-bg-dark p-3 p-md-4 border-0 shadow-sm">
+                  <section className="hero card bg-primary-subtle border-primary-subtle p-3 p-md-4 shadow-sm">
                     <div>
-                      <span className="d-inline-flex align-items-center gap-2 small text-white-50">
+                      <span className="d-inline-flex align-items-center gap-2 small text-primary-emphasis">
                         <Icon name="leaf" />
                         これまでの積み重ね
                       </span>
