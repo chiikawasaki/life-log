@@ -1,11 +1,17 @@
 export const STATUS_NAMES = [
-  "知識",
-  "体力",
-  "コミュ力",
-  "芸術",
+  "デザイン",
+  "研究",
+  "論文",
+  "その他知識",
   "生活力",
+  "コミュ力",
+  "体力",
   "副業",
-];
+  "AI",
+  "フロントエンド",
+  "バックエンド",
+  "テスト",
+] as const;
 export type Status = { id: string; name: string; display_order: number };
 export type Rule = {
   id: string;
