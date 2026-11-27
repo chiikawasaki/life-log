@@ -28,6 +28,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [recordNotice, setRecordNotice] = useState<{ level?: number }>();
   const [tab, setTab] = useState<(typeof tabs)[number]>("ホーム");
   const [editing, setEditing] = useState<Entry>();
   const [ruleEditor, setRuleEditor] = useState<Rule | "new" | null>(null);
@@ -44,6 +45,7 @@ export default function App() {
       if (userRef.current === owner) {
         setData(result);
         setError("");
+        return result;
       }
     } catch (e) {
       if (userRef.current === owner) setError(friendlyError(e));
@@ -80,6 +82,7 @@ export default function App() {
     setData(emptyData);
     setEditing(undefined);
     setRuleEditor(null);
+    setRecordNotice(undefined);
     setMessage("");
     setError("");
     if (session) void refresh();
@@ -91,16 +94,24 @@ export default function App() {
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [refresh]);
-  async function mutate(action: () => Promise<void>, success: string) {
+  async function mutate(
+    action: () => Promise<void>,
+    success: string | ((updated?: Data) => void),
+  ) {
     if (mutationLock.current) throw new Error("保存中");
+    const owner = userRef.current;
     mutationLock.current = true;
     setBusy(true);
     setError("");
     setMessage("");
     try {
       await action();
-      setMessage(success);
-      await refresh();
+      if (userRef.current !== owner) return;
+      if (typeof success === "string") setMessage(success);
+      const updated = await refresh();
+      if (userRef.current === owner && typeof success === "function") {
+        success(updated);
+      }
     } catch (e) {
       setError(friendlyError(e));
       throw e;
@@ -115,6 +126,22 @@ export default function App() {
     if (err) setError(friendlyError(err));
   }
   const summary = summarize(data);
+  function saveRecord(
+    entry: Omit<Entry, "created_at">,
+    userId: string,
+    editing: boolean,
+  ) {
+    return mutate(
+      async () => {
+        await saveEntry(entry, userId, editing);
+        if (editing) setEditing(undefined);
+      },
+      (updated) => {
+        const level = updated ? summarize(updated).level : summary.level;
+        setRecordNotice({ level: level > summary.level ? level : undefined });
+      },
+    );
+  }
   const series = dailyPoints(data, periodDays(period, end));
   const chartMax = Math.max(1, ...series.map((point) => point.xp));
   const history = [...data.entries].sort(
@@ -200,6 +227,12 @@ export default function App() {
                 {message}
               </div>
             )}
+            {recordNotice && (
+              <RecordNotice
+                level={recordNotice.level}
+                onClose={() => setRecordNotice(undefined)}
+              />
+            )}
             {loading && (
               <p role="status" className="muted">
                 最新の記録を読み込み中…
@@ -266,10 +299,7 @@ export default function App() {
                       data={data}
                       busy={busy || loading}
                       onSave={(entry) =>
-                        mutate(
-                          () => saveEntry(entry, session.user.id, false),
-                          "記録しました。おつかれさま ☕",
-                        )
+                        saveRecord(entry, session.user.id, false)
                       }
                     />
                   </section>
@@ -441,13 +471,10 @@ export default function App() {
                       key={editing.id}
                       data={data}
                       entry={editing}
-                      busy={busy}
+                      busy={busy || loading}
                       onCancel={() => setEditing(undefined)}
                       onSave={(entry) =>
-                        mutate(async () => {
-                          await saveEntry(entry, session.user.id, true);
-                          setEditing(undefined);
-                        }, "記録を更新しました。")
+                        saveRecord(entry, session.user.id, true)
                       }
                     />
                   </div>
@@ -567,6 +594,42 @@ export default function App() {
         <Icon name="leaf" /> わたしのペースで。
       </footer>
     </div>
+  );
+}
+function RecordNotice({
+  level,
+  onClose,
+}: {
+  level?: number;
+  onClose: () => void;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (!dialog.open) dialog.showModal();
+    const timer = window.setTimeout(() => dialog.close(), 5000);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      className="record-notice card"
+      aria-labelledby="record-notice-title"
+      aria-describedby={level === undefined ? undefined : "record-notice-level"}
+      onClose={onClose}
+    >
+      <h2 id="record-notice-title">記録を保存しました</h2>
+      {level !== undefined && (
+        <p id="record-notice-level" className="record-notice-level">
+          レベルアップ！ <strong>Lv. {level}</strong>
+        </p>
+      )}
+      <form method="dialog">
+        <button>閉じる</button>
+      </form>
+    </dialog>
   );
 }
 function Login({

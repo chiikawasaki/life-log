@@ -116,12 +116,18 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
     .locator("form")
     .getByRole("button", { name: "記録する", exact: true })
     .click();
+  const recordNotice = page.getByRole("dialog", { name: "記録を保存しました" });
+  await expect(recordNotice).toBeVisible();
+  await expect(recordNotice.getByText("レベルアップ！")).toHaveCount(0);
+  await expect(recordNotice).toBeHidden({ timeout: 6000 });
   await expect(page.getByText(/あと 30 分で達成/)).toBeVisible();
   await page.getByLabel("分", { exact: true }).fill("30");
   await page
     .locator("form")
     .getByRole("button", { name: "記録する", exact: true })
     .click();
+  await expect(recordNotice).toBeVisible();
+  await recordNotice.getByRole("button", { name: "閉じる" }).click();
   await expect(page.locator(".hero")).toContainText("これまでの努力 1 XP");
   await page.screenshot({
     path: testInfo.outputPath("home.png"),
@@ -136,9 +142,17 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await page.getByRole("button", { name: "履歴", exact: true }).click();
   await expect(page.locator(".list-item")).toHaveCount(2);
   await page.getByRole("button", { name: "訂正", exact: true }).first().click();
+  await page.getByLabel("分", { exact: true }).fill("1800");
+  await page.getByRole("button", { name: "変更を保存" }).click();
+  await expect(recordNotice).toContainText("レベルアップ！");
+  await expect(recordNotice).toContainText("Lv. 2");
+  await recordNotice.getByRole("button", { name: "閉じる" }).click();
+  await page.getByRole("button", { name: "訂正", exact: true }).first().click();
   await page.getByLabel("分", { exact: true }).fill("60");
   await page.getByRole("button", { name: "変更を保存" }).click();
-  await expect(page.getByText("記録を更新しました。")).toBeVisible();
+  await expect(recordNotice).toBeVisible();
+  await expect(recordNotice.getByText("レベルアップ！")).toHaveCount(0);
+  await recordNotice.getByRole("button", { name: "閉じる" }).click();
   await page.getByRole("button", { name: "振り返り", exact: true }).click();
   await expect(page.locator(".chart")).toContainText("1 XP / 2件");
   await page.getByRole("button", { name: "履歴", exact: true }).click();
