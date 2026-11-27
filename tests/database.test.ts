@@ -16,6 +16,9 @@ beforeAll(async () => {
     readFileSync("supabase/migrations/202611160001_mvp.sql", "utf8"),
   );
   await db.exec(
+    readFileSync("supabase/migrations/202611270001_goals.sql", "utf8"),
+  );
+  await db.exec(
     `insert into public.app_owner(user_id) values('${owner}'); set role authenticated; set request.jwt.claim.sub='${owner}';`,
   );
   await db.query("select public.initialize_statuses()");
@@ -148,4 +151,52 @@ it("同じ記録UUIDで再送しても重複せず、訂正内容が反映され
       )
     ).rows,
   ).toEqual([{ quantity: 120 }]);
+});
+
+it("目標は所有者だけが登録し、達成状態を変更できる", async () => {
+  const id = crypto.randomUUID();
+  await db.query(
+    "insert into goals (id, user_id, title) values ($1, $2, $3) on conflict (id) do nothing",
+    [id, owner, "本を1冊読む"],
+  );
+  await db.query("update goals set completed_at = now() where id = $1", [id]);
+  expect(
+    (
+      await db.query<{ completed_at: Date }>(
+        "select completed_at from goals where id = $1",
+        [id],
+      )
+    ).rows[0].completed_at,
+  ).not.toBeNull();
+  try {
+    await db.exec(`set request.jwt.claim.sub='${stranger}';`);
+    expect(
+      (await db.query("select id from goals where id = $1", [id])).rows,
+    ).toHaveLength(0);
+    expect(
+      (
+        await db.query(
+          "update goals set completed_at = null where id = $1 returning id",
+          [id],
+        )
+      ).rows,
+    ).toHaveLength(0);
+    await expect(
+      db.query("insert into goals (user_id, title) values ($1, $2)", [
+        stranger,
+        "goal",
+      ]),
+    ).rejects.toThrow();
+  } finally {
+    await db.exec(`set request.jwt.claim.sub='${owner}';`);
+  }
+  await db.query("update goals set completed_at = null where id = $1", [id]);
+  expect(
+    (
+      await db.query<{ completed_at: Date | null }>(
+        "select completed_at from goals where id = $1",
+        [id],
+      )
+    ).rows[0].completed_at,
+  ).toBeNull();
 });

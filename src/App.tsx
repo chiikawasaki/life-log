@@ -19,8 +19,9 @@ import {
   today,
 } from "./domain";
 import { EntryForm, RuleForm } from "./Forms";
+import { Goals } from "./Goals";
 const Reflection = lazy(() => import("./Reflection"));
-const tabs = ["ホーム", "履歴", "行動ルール", "振り返り"] as const;
+const tabs = ["ホーム", "履歴", "行動ルール", "振り返り", "目標"] as const;
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [checking, setChecking] = useState(true);
@@ -217,7 +218,9 @@ export default function App() {
                       ? "これまでに取り組んだこと。"
                       : tab === "行動ルール"
                         ? "自分のペースに合わせて。"
-                        : "少し離れて、眺めてみよう。"}
+                        : tab === "振り返り"
+                          ? "少し離れて、眺めてみよう。"
+                          : null}
                 </p>
               </div>
               <span className="small text-body-secondary text-nowrap">
@@ -255,6 +258,18 @@ export default function App() {
                 最新の記録を読み込み中…
               </p>
             )}
+            <Goals
+              key={session.user.id}
+              userId={session.user.id}
+              view={
+                tab === "ホーム"
+                  ? "home"
+                  : tab === "目標"
+                    ? "manage"
+                    : undefined
+              }
+              onManage={() => setTab("目標")}
+            />
             {tab === "ホーム" && (
               <div className="row g-4">
                 <div className="col-lg-7 d-grid gap-4 align-content-start">
