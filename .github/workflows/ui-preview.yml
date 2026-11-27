@@ -131,7 +131,7 @@ jobs:
             const artifact = process.env.ARTIFACT;
             const images = [];
             const files = [];
-            const screens = ['home', 'login', 'history', 'rules', 'reflection', 'level-up', 'goals'];
+            const screens = ['home', 'login', 'history', 'rules', 'reflection', 'level-up', 'goals-home', 'goals'];
             if (!context.payload.repository.private) {
               try {
                 const fs = require('node:fs/promises');
@@ -164,7 +164,7 @@ jobs:
                     await github.rest.git.createRef({ ...repo, ref: `refs/${ref}`, sha: commit.data.sha });
                   }
                   const host = `https://raw.githubusercontent.com/${repo.owner}/${repo.repo}/${commit.data.sha}`;
-                  const labels = ['ホーム', 'ログイン', '履歴', '行動ルール', '振り返り', 'レベルアップ', '目標'];
+                  const labels = ['ホーム', 'ログイン', '履歴', '行動ルール', '振り返り', 'レベルアップ', '目標のホーム表示', '目標'];
                   const cell = (revision, device, screen) => {
                     const path = `${revision}/${device}/${screen}.png`;
                     if (!files.some((file) => file.path === path)) return '画像なし';

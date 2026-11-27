@@ -150,6 +150,12 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await expect(recordNotice).toBeVisible();
   await recordNotice.getByRole("button", { name: "閉じる" }).click();
   await expect(page.locator(".hero")).toContainText("これまでの努力 1 XP");
+  await capture("home");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
   const activeGoals = page.getByRole("region", { name: "進行中の目標" });
   await activeGoals.getByRole("button", { name: "目標を管理" }).click();
   await page.getByLabel("目標の内容").fill("本を1冊読む");
@@ -160,7 +166,7 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
     .getByRole("button", { name: "記録する" })
     .click();
   await expect(activeGoals).toContainText("本を1冊読む");
-  await capture("home");
+  await capture("goals-home");
   await page
     .getByRole("navigation")
     .getByRole("button", { name: "目標", exact: true })
@@ -184,11 +190,6 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
     .getByRole("navigation")
     .getByRole("button", { name: "記録する" })
     .click();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
-    ),
-  ).toBe(true);
   const headerNav = page
     .getByRole("banner")
     .getByRole("navigation", { name: "メインメニュー" });

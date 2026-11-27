@@ -208,7 +208,10 @@ export default function App() {
           <Login error={error} setError={setError} />
         ) : (
           <>
-            <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+            {tab === "目標" && <h1 className="h2 mb-4">目標</h1>}
+            <div
+              className={`${tab === "目標" ? "d-none" : "d-flex"} flex-wrap justify-content-between align-items-start gap-2 mb-4`}
+            >
               <div>
                 <h1 className="h2">{tab === "ホーム" ? "今日の記録" : tab}</h1>
                 <p className="text-body-secondary mb-0">
@@ -218,9 +221,7 @@ export default function App() {
                       ? "これまでに取り組んだこと。"
                       : tab === "行動ルール"
                         ? "自分のペースに合わせて。"
-                        : tab === "振り返り"
-                          ? "少し離れて、眺めてみよう。"
-                          : null}
+                        : "少し離れて、眺めてみよう。"}
                 </p>
               </div>
               <span className="small text-body-secondary text-nowrap">
