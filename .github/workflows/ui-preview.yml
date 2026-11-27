@@ -2,7 +2,7 @@ name: UI preview
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, closed]
     paths:
       - 'src/**'
       - 'public/**'
@@ -23,6 +23,7 @@ concurrency:
 jobs:
   preview:
     name: Screenshots and browser tests
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     outputs:
       before: ${{ steps.before-test.outcome }}
@@ -100,11 +101,18 @@ jobs:
   report:
     name: Post PR summary
     needs: preview
-    if: ${{ !cancelled() && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ !cancelled() && github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+      contents: write
     steps:
+      - uses: actions/download-artifact@v4
+        if: needs.preview.outputs.artifact != ''
+        continue-on-error: true
+        with:
+          name: ui-before-after
+          path: screenshots
       - uses: actions/github-script@v7
         env:
           BEFORE: ${{ needs.preview.outputs.before }}
@@ -121,6 +129,61 @@ jobs:
             const run = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${context.runId}`;
             const result = (value) => ({ success: '成功', failure: '失敗', cancelled: '中止', skipped: '未実施' })[value] ?? '未実施';
             const artifact = process.env.ARTIFACT;
+            const images = [];
+            const files = [];
+            const screens = ['home', 'login', 'history', 'rules', 'reflection', 'level-up'];
+            if (!context.payload.repository.private) {
+              try {
+                const fs = require('node:fs/promises');
+                for (const revision of ['before', 'after']) {
+                  const dir = `screenshots/${revision}/test-results`;
+                  for (const entry of await fs.readdir(dir, { withFileTypes: true }).catch(() => [])) {
+                    const device = entry.name.match(/-(desktop|mobile)$/)?.[1];
+                    if (!entry.isDirectory() || !device) continue;
+                    for (const screen of screens) {
+                      const source = `${dir}/${entry.name}/${screen}.png`;
+                      const data = await fs.readFile(source).catch(() => null);
+                      if (!data || !data.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))) continue;
+                      const path = `${revision}/${device}/${screen}.png`;
+                      const blob = await github.rest.git.createBlob({ ...repo, content: data.toString('base64'), encoding: 'base64' });
+                      files.push({ path, sha: blob.data.sha, mode: '100644', type: 'blob' });
+                    }
+                  }
+                }
+                if (files.length) {
+                  const tree = await github.rest.git.createTree({ ...repo, tree: files });
+                  const commit = await github.rest.git.createCommit({
+                    ...repo, message: `UI screenshots for PR #${pull.number}`, tree: tree.data.sha, parents: [],
+                  });
+                  const ref = `heads/ui-screenshots/pr-${pull.number}`;
+                  try {
+                    await github.rest.git.getRef({ ...repo, ref });
+                    await github.rest.git.updateRef({ ...repo, ref, sha: commit.data.sha, force: true });
+                  } catch (error) {
+                    if (error.status !== 404) throw error;
+                    await github.rest.git.createRef({ ...repo, ref: `refs/${ref}`, sha: commit.data.sha });
+                  }
+                  const host = `https://raw.githubusercontent.com/${repo.owner}/${repo.repo}/${commit.data.sha}`;
+                  const labels = ['ホーム', 'ログイン', '履歴', '行動ルール', '振り返り', 'レベルアップ'];
+                  const cell = (revision, device, screen) => {
+                    const path = `${revision}/${device}/${screen}.png`;
+                    if (!files.some((file) => file.path === path)) return '画像なし';
+                    return `<a href="${host}/${path}"><img src="${host}/${path}" width="280" alt="${revision} ${device} ${screen}"></a>`;
+                  };
+                  for (const [device, title] of [['desktop', 'PC'], ['mobile', 'スマートフォン']]) {
+                    images.push('<details' + (device === 'desktop' ? ' open' : '') + '>', `<summary>${title}の画面比較</summary>`, '',
+                      '| 画面 | 修正前 | 修正後 |', '| --- | --- | --- |');
+                    for (const [index, screen] of screens.entries()) {
+                      images.push(`| ${labels[index]} | ${cell('before', device, screen)} | ${cell('after', device, screen)} |`);
+                    }
+                    images.push('', '</details>', '');
+                  }
+                }
+              } catch (error) {
+                core.warning(`Could not publish inline screenshots: ${error.message}`);
+              }
+            }
+
             const body = [
               marker,
               '## UI画面確認',
@@ -130,8 +193,9 @@ jobs:
               `| 修正前 | \`${pull.base.sha.slice(0, 7)}\` | ${result(process.env.BEFORE)} |`,
               `| 修正後 | \`${pull.head.sha.slice(0, 7)}\` | ${result(process.env.AFTER)} |`,
               '',
+              ...images,
               artifact
-                ? `[スクリーンショットをダウンロード（14日間）](${artifact})。ZIP内の before と after を比較できます。`
+                ? `[スクリーンショットをダウンロード（14日間）](${artifact})（元画像・失敗時の詳細）。`
                 : 'スクリーンショットのArtifactがありません。',
               `[実行ログ](${run})`,
             ].join('\n');
@@ -142,4 +206,23 @@ jobs:
               await github.rest.issues.updateComment({ ...repo, comment_id: previous.id, body });
             } else {
               await github.rest.issues.createComment({ ...repo, issue_number: pull.number, body });
+            }
+
+
+  cleanup:
+    name: Remove published screenshot branch
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const ref = `heads/ui-screenshots/pr-${context.payload.pull_request.number}`;
+            try {
+              await github.rest.git.getRef({ ...context.repo, ref });
+              await github.rest.git.deleteRef({ ...context.repo, ref });
+            } catch (error) {
+              if (error.status !== 404) throw error;
             }
