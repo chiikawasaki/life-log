@@ -55,18 +55,16 @@ export async function createGoal(
   statusIds: string[],
   dueOn: string | null,
 ) {
-  const { error } = await client()
-    .from("goals")
-    .upsert(
-      {
-        id,
-        user_id: userId,
-        title,
-        required_status_ids: statusIds,
-        due_on: dueOn,
-      },
-      { onConflict: "id", ignoreDuplicates: true },
-    );
+  const { error } = await client().from("goals").upsert(
+    {
+      id,
+      user_id: userId,
+      title,
+      required_status_ids: statusIds,
+      due_on: dueOn,
+    },
+    { onConflict: "id", ignoreDuplicates: true },
+  );
   if (error) throw error;
 }
 
