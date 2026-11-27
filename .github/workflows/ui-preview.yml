@@ -1,0 +1,145 @@
+name: UI preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package*.json'
+      - 'vite.config.*'
+      - 'playwright.config.*'
+      - 'tests/e2e/**'
+      - '.github/workflows/ui-preview.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Screenshots and browser tests
+    runs-on: ubuntu-latest
+    outputs:
+      before: ${{ steps.before-test.outcome }}
+      after: ${{ steps.after-test.outcome }}
+      artifact: ${{ steps.upload.outputs.artifact-url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: before
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: after
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            before/package-lock.json
+            after/package-lock.json
+      - name: Capture base commit
+        id: before-test
+        working-directory: before
+        continue-on-error: true
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+      - name: Capture and test head commit
+        id: after-test
+        working-directory: after
+        continue-on-error: true
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+      - name: Upload before and after screenshots
+        id: upload
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: ui-before-after
+          path: |
+            before/test-results/**/*.png
+            after/test-results/**/*.png
+            before/test-results/**/trace.zip
+            after/test-results/**/trace.zip
+            before/test-results/**/error-context.md
+            after/test-results/**/error-context.md
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Summarize results
+        if: ${{ !cancelled() }}
+        env:
+          BEFORE: ${{ steps.before-test.outcome }}
+          AFTER: ${{ steps.after-test.outcome }}
+          ARTIFACT: ${{ steps.upload.outputs.artifact-url }}
+        run: |
+          {
+            echo '## UI画面確認'
+            echo
+            echo "- 修正前（PC・スマートフォン）: ${BEFORE:-not run}"
+            echo "- 修正後（PC・スマートフォン）: ${AFTER:-not run}"
+            if [ -n "$ARTIFACT" ]; then
+              echo "- [画像と失敗時の詳細（14日間）]($ARTIFACT)"
+            else
+              echo '- 画像のArtifactを取得できませんでした。実行ログを確認してください。'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          test "$AFTER" = success
+
+  report:
+    name: Post PR summary
+    needs: preview
+    if: ${{ !cancelled() && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          BEFORE: ${{ needs.preview.outputs.before }}
+          AFTER: ${{ needs.preview.outputs.after }}
+          ARTIFACT: ${{ needs.preview.outputs.artifact }}
+        with:
+          script: |
+            const marker = '<!-- life-log-ui-preview -->';
+            const pull = context.payload.pull_request;
+            const repo = context.repo;
+            const current = await github.rest.pulls.get({ ...repo, pull_number: pull.number });
+            if (current.data.head.sha !== pull.head.sha || current.data.state !== 'open') return;
+
+            const run = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${context.runId}`;
+            const result = (value) => ({ success: '成功', failure: '失敗', cancelled: '中止', skipped: '未実施' })[value] ?? '未実施';
+            const artifact = process.env.ARTIFACT;
+            const body = [
+              marker,
+              '## UI画面確認',
+              '',
+              '| 対象 | コミット | Playwright（PC・スマートフォン） |',
+              '| --- | --- | --- |',
+              `| 修正前 | \`${pull.base.sha.slice(0, 7)}\` | ${result(process.env.BEFORE)} |`,
+              `| 修正後 | \`${pull.head.sha.slice(0, 7)}\` | ${result(process.env.AFTER)} |`,
+              '',
+              artifact
+                ? `[スクリーンショットをダウンロード（14日間）](${artifact})。ZIP内の before と after を比較できます。`
+                : 'スクリーンショットのArtifactがありません。',
+              `[実行ログ](${run})`,
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, { ...repo, issue_number: pull.number });
+            const previous = comments.find((item) => item.user?.login === 'github-actions[bot]' && item.body?.startsWith(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({ ...repo, comment_id: previous.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...repo, issue_number: pull.number, body });
+            }

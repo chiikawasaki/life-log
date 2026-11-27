@@ -1,6 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { STATUS_NAMES } from "../../src/domain";
 test("ログイン・時間記録・訂正・振り返り・削除", async ({ page }, testInfo) => {
+  const capture = (name: string) =>
+    page.screenshot({
+      path: testInfo.outputPath(name + ".png"),
+      fullPage: true,
+      animations: "disabled",
+    });
   const owner = "11111111-1111-4111-8111-111111111111";
   const user = {
     id: owner,
@@ -101,11 +107,7 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await expect(
     page.getByRole("button", { name: "ログイン", exact: true }),
   ).toBeVisible();
-  await page.screenshot({
-    path: testInfo.outputPath("login.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
+  await capture("login");
   await page.getByLabel("メールアドレス").fill("owner@example.test");
   await page.getByLabel("パスワード").fill("test-password");
   await page.getByRole("button", { name: "ログイン", exact: true }).click();
@@ -129,11 +131,7 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await expect(recordNotice).toBeVisible();
   await recordNotice.getByRole("button", { name: "閉じる" }).click();
   await expect(page.locator(".hero")).toContainText("これまでの努力 1 XP");
-  await page.screenshot({
-    path: testInfo.outputPath("home.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
+  await capture("home");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -152,11 +150,13 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await historyLink.click();
   await expect(historyLink).toHaveAttribute("aria-current", "page");
   await expect(page.locator(".list-item")).toHaveCount(2);
+  await capture("history");
   await page.getByRole("button", { name: "訂正", exact: true }).first().click();
   await page.getByLabel("分", { exact: true }).fill("1800");
   await page.getByRole("button", { name: "変更を保存" }).click();
   await expect(recordNotice).toContainText("レベルアップ！");
   await expect(recordNotice).toContainText("Lv. 2");
+  await capture("level-up");
   await recordNotice.getByRole("button", { name: "閉じる" }).click();
   await page.getByRole("button", { name: "訂正", exact: true }).first().click();
   await page.getByLabel("分", { exact: true }).fill("60");
@@ -170,6 +170,7 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await expect(recordedDay).toHaveAttribute("data-level", "2");
   await expect(recordedDay).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".activity-detail")).toContainText("1 XP / 2件");
+  await capture("reflection");
   await page.getByLabel("この日まで").fill("2026-01-04");
   const sunday = calendar.getByRole("button", {
     name: "2026-01-04 0 XP / 0件",
@@ -192,11 +193,7 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
   await expect(page.getByRole("heading", { name: "今日の記録" })).toBeVisible();
   await page.getByRole("button", { name: "行動ルール", exact: true }).click();
   await page.getByRole("button", { name: "追加する", exact: true }).click();
-  await page.screenshot({
-    path: testInfo.outputPath("rules.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
+  await capture("rules");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
