@@ -58,6 +58,7 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
       created_at: "2026-01-01T00:00:00Z",
     },
   ];
+  const goals: Record<string, unknown>[] = [];
   let entries: Record<string, unknown>[] = [];
   await page.route("https://life-log-test.supabase.co/**", async (route) => {
     const req = route.request(),
@@ -76,7 +77,25 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
     else if (url.pathname === "/rest/v1/statuses") body = statuses;
     else if (url.pathname === "/rest/v1/activity_rules") body = rules;
     else if (url.pathname === "/rest/v1/rule_versions") body = versions;
-    else if (url.pathname === "/rest/v1/effort_entries") {
+    else if (url.pathname === "/rest/v1/goals") {
+      if (req.method() === "POST") {
+        const value = req.postDataJSON();
+        if (!goals.some((goal) => goal.id === value.id)) {
+          goals.push({
+            ...value,
+            created_at: new Date().toISOString(),
+            completed_at: null,
+          });
+        }
+        body = null;
+      } else if (req.method() === "PATCH") {
+        const goal = goals.find(
+          (item) => item.id === url.searchParams.get("id")?.slice(3),
+        );
+        Object.assign(goal!, req.postDataJSON());
+        body = goal;
+      } else body = goals;
+    } else if (url.pathname === "/rest/v1/effort_entries") {
       if (req.method() === "POST") {
         const value = req.postDataJSON();
         if (!entries.some((e) => e.id === value.id))
@@ -137,6 +156,40 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+  const activeGoals = page.getByRole("region", { name: "進行中の目標" });
+  await activeGoals.getByRole("button", { name: "目標を管理" }).click();
+  await page.getByLabel("目標の内容").fill("本を1冊読む");
+  await page.getByRole("button", { name: "目標を登録" }).click();
+  await expect(activeGoals).toContainText("本を1冊読む");
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "記録する" })
+    .click();
+  await expect(activeGoals).toContainText("本を1冊読む");
+  await capture("goals-home");
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "目標", exact: true })
+    .click();
+  await activeGoals.getByRole("button", { name: "達成にする" }).click();
+  const completedGoals = page.getByRole("region", { name: "達成した目標" });
+  await expect(completedGoals).toContainText("本を1冊読む");
+  await expect(completedGoals).toContainText("達成日");
+  await expect(activeGoals).not.toContainText("本を1冊読む");
+  await capture("goals");
+  await page.reload();
+  await expect(activeGoals).toContainText("進行中の目標はありません。");
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "目標", exact: true })
+    .click();
+  await expect(completedGoals).toContainText("本を1冊読む");
+  await completedGoals.getByRole("button", { name: "進行中に戻す" }).click();
+  await expect(activeGoals).toContainText("本を1冊読む");
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "記録する" })
+    .click();
   const headerNav = page
     .getByRole("banner")
     .getByRole("navigation", { name: "メインメニュー" });

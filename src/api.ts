@@ -19,26 +19,61 @@ export function friendlyError(error: unknown) {
     return "接続できませんでした。通信状態を確認して再試行してください。";
   return "処理を完了できませんでした。入力は保持されています。接続や設定を確認して再試行してください。";
 }
+async function loadRows<T>(table: string) {
+  const rows: T[] = [];
+  for (let offset = 0; ; offset += 500) {
+    // Supabase caps responses at 1,000 rows by default.
+    const { data, error } = await client()
+      .from(table)
+      .select("*")
+      .order("id")
+      .range(offset, offset + 499)
+      .returns<T[]>();
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < 500) return rows;
+  }
+}
+
+export type Goal = {
+  id: string;
+  title: string;
+  created_at: string;
+  completed_at: string | null;
+};
+
+export function loadGoals() {
+  return loadRows<Goal>("goals");
+}
+
+export async function createGoal(id: string, userId: string, title: string) {
+  const { error } = await client()
+    .from("goals")
+    .upsert(
+      { id, user_id: userId, title },
+      { onConflict: "id", ignoreDuplicates: true },
+    );
+  if (error) throw error;
+}
+
+export async function setGoalCompleted(id: string, completedAt: string | null) {
+  const { data, error } = await client()
+    .from("goals")
+    .update({ completed_at: completedAt })
+    .eq("id", id)
+    .select("*")
+    .single<Goal>();
+  if (error) throw error;
+  return data;
+}
+
 export async function loadData(): Promise<Data> {
   const c = client();
   const init = await c.rpc("initialize_statuses");
   if (init.error) throw init.error;
   const results = await Promise.all(
     ["statuses", "activity_rules", "rule_versions", "effort_entries"].map(
-      async (table) => {
-        // Page explicitly: Supabase defaults to a 1,000-row response cap.
-        const rows: unknown[] = [];
-        for (let offset = 0; ; offset += 500) {
-          const { data, error } = await c
-            .from(table)
-            .select("*")
-            .order("id")
-            .range(offset, offset + 499);
-          if (error) throw error;
-          rows.push(...data);
-          if (data.length < 500) return rows;
-        }
-      },
+      (table) => loadRows<unknown>(table),
     ),
   );
   const result = {
