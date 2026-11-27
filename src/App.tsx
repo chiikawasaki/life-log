@@ -209,20 +209,9 @@ export default function App() {
         ) : (
           <>
             <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
-              <div>
-                <h1 className="h2">{tab === "ホーム" ? "今日の記録" : tab}</h1>
-                {tab !== "目標" && (
-                  <p className="text-body-secondary mb-0">
-                    {tab === "ホーム"
-                      ? "できたことを、ひとつずつ。"
-                      : tab === "履歴"
-                        ? "これまでに取り組んだこと。"
-                        : tab === "行動ルール"
-                          ? "自分のペースに合わせて。"
-                          : "少し離れて、眺めてみよう。"}
-                  </p>
-                )}
-              </div>
+              <h1 className="h2 mb-0">
+                {tab === "ホーム" ? "今日の記録" : tab}
+              </h1>
               <span className="small text-body-secondary text-nowrap">
                 {today().replaceAll("-", " / ")}
               </span>
@@ -278,11 +267,8 @@ export default function App() {
                       <span className="app-icon bg-primary-subtle text-primary">
                         <Icon name="write" />
                       </span>
-                      <h2 className="h5 mb-0">今日は何をしましたか？</h2>
+                      <h2 className="h5 mb-0">行動を記録</h2>
                     </div>
-                    <p className="text-body-secondary">
-                      時間や回数を入れて、さっと記録。
-                    </p>
                     <EntryForm
                       key={data.versions.map((v) => v.id).join()}
                       data={data}
@@ -294,9 +280,6 @@ export default function App() {
                   </section>
                   <section className="card shadow-sm p-3 p-md-4">
                     <h2 className="h5">次のポイントまで</h2>
-                    <p className="text-body-secondary">
-                      途中の分も、ちゃんと貯まっています。
-                    </p>
                     <div className="list-group list-group-flush">
                       {summary.progress
                         .filter(
@@ -338,7 +321,7 @@ export default function App() {
                     </div>
                     {!data.rules.some((r) => !r.archived_at) && (
                       <div className="alert alert-light border mb-0">
-                        「勉強120分で＋1」など、自分に合うルールを作りましょう。
+                        有効な行動ルールがありません。
                         <button
                           className="btn btn-outline-secondary d-block mt-2"
                           onClick={() => {
@@ -354,15 +337,9 @@ export default function App() {
                 </div>
                 <aside className="col-lg-5" aria-label="成長のまとめ">
                   <section className="hero card bg-primary-subtle border-primary-subtle p-3 p-md-4 shadow-sm">
-                    <div>
-                      <span className="d-inline-flex align-items-center gap-2 small text-primary-emphasis">
-                        <Icon name="leaf" />
-                        これまでの積み重ね
-                      </span>
-                      <p className="fs-5 mb-0">
-                        これまでの努力 <strong>{summary.xp}</strong> XP
-                      </p>
-                    </div>
+                    <p className="fs-5 mb-0">
+                      累計 <strong>{summary.xp}</strong> XP
+                    </p>
                     <div className="d-flex align-items-baseline gap-2 my-3">
                       <span>レベル</span>
                       <strong className="display-5 fw-semibold">
@@ -400,15 +377,12 @@ export default function App() {
                       </article>
                     ))}
                   </section>
-                  <p className="text-body-secondary small mt-3 mb-0">
-                    休む日があっても、積み重ねはそのまま。
-                  </p>
                 </aside>
               </div>
             )}
             {tab === "行動ルール" && (
               <section className="card shadow-sm p-3 p-md-4">
-                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                   <h2 className="h5 mb-0">行動ルール</h2>
                   <button
                     className="btn btn-primary d-inline-flex align-items-center gap-1"
@@ -419,9 +393,6 @@ export default function App() {
                     追加する
                   </button>
                 </div>
-                <p className="text-body-secondary">
-                  勉強は120分で＋1から。必要な量とポイントは自由に設定できます。
-                </p>
                 {ruleEditor && (
                   <RuleForm
                     key={typeof ruleEditor === "string" ? "new" : ruleEditor.id}
@@ -504,7 +475,7 @@ export default function App() {
                 </div>
                 {!data.rules.length && (
                   <p className="alert alert-light border mb-0">
-                    まだ行動ルールはありません。最初のひとつを追加しましょう。
+                    行動ルールがありません。
                   </p>
                 )}
               </section>
@@ -538,7 +509,7 @@ export default function App() {
                 )}
                 {!history.length && (
                   <p className="alert alert-light border mb-0">
-                    まだ記録がありません。今日の小さな一歩から始めましょう。
+                    記録がありません。
                   </p>
                 )}
                 <div className="list-group list-group-flush">
@@ -612,9 +583,6 @@ export default function App() {
           </>
         )}
       </main>
-      <footer className="border-top py-3 text-center text-body-secondary small">
-        <Icon name="leaf" /> わたしのペースで。
-      </footer>
     </div>
   );
 }
@@ -720,9 +688,8 @@ function Login({
       <span className="app-icon bg-primary text-white mb-3">
         <Icon name="leaf" />
       </span>
-      <h1 className="h2">おかえりなさい</h1>
-      <p className="text-body-secondary">今日のできたこと、残していこう。</p>
-      <form className="d-grid gap-3 mb-3" onSubmit={login}>
+      <h1 className="h2 mb-3">ログイン</h1>
+      <form className="d-grid gap-3" onSubmit={login}>
         <label>
           メールアドレス
           <input
@@ -756,9 +723,6 @@ function Login({
           {pending ? "ログイン中…" : "ログイン"}
         </button>
       </form>
-      <p className="text-body-secondary">
-        <small>あなただけの記録帳です。</small>
-      </p>
     </section>
   );
 }

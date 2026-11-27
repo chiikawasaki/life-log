@@ -149,7 +149,7 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
     .click();
   await expect(recordNotice).toBeVisible();
   await recordNotice.getByRole("button", { name: "閉じる" }).click();
-  await expect(page.locator(".hero")).toContainText("これまでの努力 1 XP");
+  await expect(page.locator(".hero")).toContainText("累計 1 XP");
   await capture("home");
   expect(
     await page.evaluate(
@@ -266,7 +266,7 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
     .getByRole("navigation")
     .getByRole("button", { name: "記録する", exact: true })
     .click();
-  await expect(page.locator(".hero")).toContainText("これまでの努力 0 XP");
+  await expect(page.locator(".hero")).toContainText("累計 0 XP");
   await page.reload();
   await expect(page.getByRole("heading", { name: "今日の記録" })).toBeVisible();
   await page.getByRole("button", { name: "行動ルール", exact: true }).click();
