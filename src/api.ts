@@ -40,26 +40,43 @@ export type Goal = {
   title: string;
   created_at: string;
   completed_at: string | null;
+  required_status_ids: string[];
 };
 
 export function loadGoals() {
   return loadRows<Goal>("goals");
 }
 
-export async function createGoal(id: string, userId: string, title: string) {
+export async function createGoal(
+  id: string,
+  userId: string,
+  title: string,
+  statusIds: string[],
+) {
   const { error } = await client()
     .from("goals")
     .upsert(
-      { id, user_id: userId, title },
+      { id, user_id: userId, title, required_status_ids: statusIds },
       { onConflict: "id", ignoreDuplicates: true },
     );
   if (error) throw error;
 }
 
-export async function setGoalCompleted(id: string, completedAt: string | null) {
+export function setGoalCompleted(id: string, completedAt: string | null) {
+  return updateGoal(id, { completed_at: completedAt });
+}
+
+export function setGoalStatuses(id: string, statusIds: string[]) {
+  return updateGoal(id, { required_status_ids: statusIds });
+}
+
+async function updateGoal(
+  id: string,
+  changes: Partial<Pick<Goal, "completed_at" | "required_status_ids">>,
+) {
   const { data, error } = await client()
     .from("goals")
-    .update({ completed_at: completedAt })
+    .update(changes)
     .eq("id", id)
     .select("*")
     .single<Goal>();

@@ -4,25 +4,93 @@ import {
   friendlyError,
   loadGoals,
   setGoalCompleted,
+  setGoalStatuses,
   type Goal,
 } from "./api";
+import type { Status } from "./domain";
 
 const goalDate = new Intl.DateTimeFormat("ja-JP", {
   dateStyle: "medium",
   timeZone: "Asia/Tokyo",
 });
 
+function StatusPicker({
+  statuses,
+  selected,
+  onChange,
+  disabled,
+}: {
+  statuses: Status[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+  disabled: boolean;
+}) {
+  return (
+    <fieldset disabled={disabled}>
+      <legend className="fs-6 mb-2">必要なステータス（任意・複数選択）</legend>
+      <div className="d-flex flex-wrap gap-2">
+        {statuses.map((status) => (
+          <label
+            key={status.id}
+            className="d-inline-flex align-items-center gap-2 px-2 py-1 border rounded"
+          >
+            <input
+              className="form-check-input mt-0"
+              type="checkbox"
+              checked={selected.includes(status.id)}
+              onChange={(event) =>
+                onChange(
+                  event.target.checked
+                    ? [...selected, status.id]
+                    : selected.filter((id) => id !== status.id),
+                )
+              }
+            />
+            {status.name}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function GoalStatuses({ statuses, goal }: { statuses: Status[]; goal: Goal }) {
+  const selected = statuses.filter((status) =>
+    goal.required_status_ids?.includes(status.id),
+  );
+  if (!selected.length) return null;
+  return (
+    <ul
+      aria-label="必要なステータス"
+      className="list-unstyled d-flex flex-wrap gap-1 mt-2 mb-0"
+    >
+      {selected.map((status) => (
+        <li
+          key={status.id}
+          className="badge bg-primary-subtle text-primary-emphasis"
+        >
+          {status.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function Goals({
   userId,
+  statuses,
   view,
   onManage,
 }: {
   userId: string;
+  statuses: Status[];
   view?: "home" | "manage";
   onManage: () => void;
 }) {
   const [goals, setGoals] = useState<Goal[]>();
   const [title, setTitle] = useState("");
+  const [requiredStatuses, setRequiredStatuses] = useState<string[]>([]);
+  const [editor, setEditor] = useState<{ id: string; statusIds: string[] }>();
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -65,10 +133,11 @@ export function Goals({
     if (!trimmed || trimmed.length > 120) return;
     void run(async () => {
       const id = (draftId.current ??= crypto.randomUUID());
-      await createGoal(id, userId, trimmed);
+      await createGoal(id, userId, trimmed, requiredStatuses);
       setGoals(await loadGoals());
       draftId.current = undefined;
       setTitle("");
+      setRequiredStatuses([]);
     });
   }
 
@@ -78,9 +147,22 @@ export function Goals({
         goal.id,
         goal.completed_at ? null : new Date().toISOString(),
       );
-      setGoals((items) =>
-        items?.map((item) => (item.id === updated.id ? updated : item)),
-      );
+      replaceGoal(updated);
+    });
+  }
+
+  function replaceGoal(updated: Goal) {
+    setGoals((items) =>
+      items?.map((item) => (item.id === updated.id ? updated : item)),
+    );
+  }
+
+  function saveStatuses(event: FormEvent) {
+    event.preventDefault();
+    if (!editor) return;
+    void run(async () => {
+      replaceGoal(await setGoalStatuses(editor.id, editor.statusIds));
+      setEditor(undefined);
     });
   }
 
@@ -122,11 +204,8 @@ export function Goals({
           <h2 id="goal-new" className="h5">
             目標を追加
           </h2>
-          <form
-            className="d-flex flex-wrap align-items-end gap-2"
-            onSubmit={submit}
-          >
-            <label className="flex-grow-1">
+          <form className="d-grid gap-3" onSubmit={submit}>
+            <label>
               目標の内容
               <input
                 className="form-control mt-1"
@@ -141,8 +220,17 @@ export function Goals({
                 }}
               />
             </label>
+            <StatusPicker
+              statuses={statuses}
+              selected={requiredStatuses}
+              disabled={busy || !goals}
+              onChange={(ids) => {
+                setRequiredStatuses(ids);
+                draftId.current = undefined;
+              }}
+            />
             <button
-              className="btn btn-primary"
+              className="btn btn-primary me-auto"
               disabled={busy || !goals || !title.trim()}
             >
               目標を登録
@@ -182,16 +270,65 @@ export function Goals({
               className="list-group-item px-0 d-flex flex-wrap align-items-center justify-content-between gap-2"
               key={goal.id}
             >
-              <span className="text-break">{goal.title}</span>
+              <div>
+                <div className="text-break">{goal.title}</div>
+                <GoalStatuses goal={goal} statuses={statuses} />
+              </div>
               {view === "manage" && (
-                <button
-                  className="btn btn-outline-secondary btn-sm"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => toggle(goal)}
+                <div className="d-flex flex-wrap gap-2">
+                  <button
+                    className="btn btn-outline-secondary btn-sm"
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                      setEditor({
+                        id: goal.id,
+                        statusIds: goal.required_status_ids ?? [],
+                      })
+                    }
+                  >
+                    ステータスを編集
+                  </button>
+                  <button
+                    className="btn btn-outline-secondary btn-sm"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      if (editor?.id === goal.id) setEditor(undefined);
+                      toggle(goal);
+                    }}
+                  >
+                    達成にする
+                  </button>
+                </div>
+              )}
+              {view === "manage" && editor?.id === goal.id && (
+                <form
+                  className="w-100 d-grid gap-2 mt-2"
+                  onSubmit={saveStatuses}
                 >
-                  達成にする
-                </button>
+                  <StatusPicker
+                    statuses={statuses}
+                    selected={editor.statusIds}
+                    disabled={busy}
+                    onChange={(statusIds) =>
+                      setEditor({ id: goal.id, statusIds })
+                    }
+                  />
+                  <div className="d-flex gap-2">
+                    <button className="btn btn-primary btn-sm" disabled={busy}>
+                      ステータスを保存
+                    </button>
+                    <button
+                      className="btn btn-outline-secondary btn-sm"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setEditor(undefined)}
+                    >
+                      キャンセル
+                    </button>
+                  </div>
+                </form>
               )}
             </li>
           ))}
@@ -224,6 +361,7 @@ export function Goals({
                   >
                     達成日 {goalDate.format(new Date(goal.completed_at))}
                   </time>
+                  <GoalStatuses goal={goal} statuses={statuses} />
                 </div>
                 <button
                   className="btn btn-outline-secondary btn-sm"
