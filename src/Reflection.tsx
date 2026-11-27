@@ -57,6 +57,7 @@ const statusColors = [
   "#3f7868",
   "#956424",
   "#596478",
+  "#ad634e",
 ];
 
 function ChartCanvas({

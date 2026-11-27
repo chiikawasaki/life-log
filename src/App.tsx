@@ -250,6 +250,7 @@ export default function App() {
             <Goals
               key={session.user.id}
               userId={session.user.id}
+              statuses={data.statuses}
               view={
                 tab === "ホーム"
                   ? "home"

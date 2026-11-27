@@ -11,6 +11,7 @@ export const STATUS_NAMES = [
   "フロントエンド",
   "バックエンド",
   "テスト",
+  "英語",
 ] as const;
 export type Status = { id: string; name: string; display_order: number };
 export type Rule = {

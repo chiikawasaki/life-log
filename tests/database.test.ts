@@ -10,6 +10,7 @@ let status: string;
 let version: string;
 let rule: string;
 let art: string;
+const legacyGoal = "66666666-6666-4666-8666-666666666666";
 beforeAll(async () => {
   await db.exec(
     `create role anon; create role authenticated; create schema auth; create table auth.users(id uuid primary key); create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub', true),'')::uuid$$; grant usage on schema public,auth to authenticated,anon; grant execute on function auth.uid() to authenticated,anon; insert into auth.users values('${owner}'),('${stranger}');`,
@@ -45,13 +46,20 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  await db.query(
+    "insert into goals (id, user_id, title) values ($1, $2, '既存の目標')",
+    [legacyGoal, owner],
+  );
+  await db.exec(
+    readFileSync("supabase/migrations/202611270003_goal_statuses.sql", "utf8"),
+  );
   await db.exec("set role authenticated");
   await db.query("select public.initialize_statuses()");
 }, 20000);
 afterAll(async () => {
   await db.close();
 });
-it("指定順の12ステータスを繰り返し初期化しても重複しない", async () => {
+it("指定順の13ステータスを繰り返し初期化しても重複しない", async () => {
   await db.query("select initialize_statuses()");
   const { rows } = await db.query<{ id: string; name: string }>(
     "select id, name from statuses order by display_order",
@@ -225,4 +233,31 @@ it("目標は所有者だけが登録し、達成状態を変更できる", asyn
       )
     ).rows[0].completed_at,
   ).toBeNull();
+});
+
+it("既存目標に複数のステータスを設定でき、不明・重複IDを拒否する", async () => {
+  const { rows } = await db.query<{ id: string }>(
+    "select id from statuses where name in ('英語', '研究') order by display_order",
+  );
+  const ids = rows.map(({ id }) => id);
+  expect(ids).toHaveLength(2);
+  const read = () =>
+    db.query("select required_status_ids from goals where id = $1", [
+      legacyGoal,
+    ]);
+  expect((await read()).rows).toEqual([{ required_status_ids: [] }]);
+  await db.query(
+    "update goals set required_status_ids = $1::uuid[] where id = $2",
+    [ids, legacyGoal],
+  );
+  expect((await read()).rows).toEqual([{ required_status_ids: ids }]);
+  for (const invalid of [[ids[0], ids[0]], [crypto.randomUUID()]]) {
+    await expect(
+      db.query(
+        "update goals set required_status_ids = $1::uuid[] where id = $2",
+        [invalid, legacyGoal],
+      ),
+    ).rejects.toThrow("Invalid goal statuses");
+  }
+  expect((await read()).rows).toEqual([{ required_status_ids: ids }]);
 });

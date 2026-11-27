@@ -78,6 +78,7 @@ export const statusIcons: Partial<Record<string, IconName>> = {
   フロントエンド: "code",
   バックエンド: "server",
   テスト: "check",
+  英語: "book",
   知識: "book",
   芸術: "art",
 };
