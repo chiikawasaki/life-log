@@ -37,3 +37,11 @@ DB接続ではTLS証明書を検証します。必要ならSupabaseの接続設�
 
 実プロジェクトでの認証・記録・同期を確認するまで、セットアップ完了とは扱いません。
 公開する場合はホスティング先とアクセス方法を別途決めます。現時点でアプリのデプロイは行っていません。
+
+## 本番マイグレーションの自動適用
+
+`supabase/migrations/` が変わると、`main` への反映時に GitHub Actions の **Apply production Supabase migrations** が実行されます。Supabase CLI は本番DBのマイグレーション履歴を参照して未適用分を順番に適用します。過去のマイグレーションファイルは編集せず、新しい番号のファイルを追加します。
+
+本番用の Supabase **Session pooler** 接続文字列を GitHub リポジトリの Actions Secret `PRODUCTION_MIGRATION_DATABASE_URL` に登録します。接続先を確認し、`sslmode=verify-full` で接続します。失敗した場合は Actions で原因を確認し、同じワークフローを `main` から再実行できます。
+
+VercelのデプロイとDBの適用は並行して始まります。新しいDB構造が動作に必須の変更は、先に後方互換のあるDB変更をマージし、Actionsの成功を確認してから画面やAPIの変更をマージします。

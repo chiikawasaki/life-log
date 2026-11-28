@@ -1,0 +1,41 @@
+name: Apply production Supabase migrations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - '.github/workflows/supabase-migrations.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-supabase-migrations
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: supabase/setup-cli@v1
+        with:
+          version: '2.76.15'
+      - name: Apply pending migrations
+        env:
+          MIGRATION_DB_URL: ${{ secrets.PRODUCTION_MIGRATION_DATABASE_URL }}
+          PGSSLMODE: verify-full
+          PGSSLROOTCERT: /etc/ssl/certs/ca-certificates.crt
+        run: |
+          if [ -z "$MIGRATION_DB_URL" ]; then
+            echo "::error::Set the PRODUCTION_MIGRATION_DATABASE_URL repository secret before running this workflow."
+            exit 1
+          fi
+          supabase db push --yes --db-url "$MIGRATION_DB_URL"
