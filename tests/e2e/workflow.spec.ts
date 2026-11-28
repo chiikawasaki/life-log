@@ -288,6 +288,32 @@ test("ログイン・時間記録・訂正・振り返り・削除", async ({ pa
       .toBe(true);
   }
   await capture("reflection");
+  await page.getByText("1週間", { exact: true }).click();
+  await expect
+    .poll(() =>
+      charts[1].evaluate((element) => {
+        const canvas = element as HTMLCanvasElement;
+        const row = canvas
+          .getContext("2d")!
+          .getImageData(0, Math.floor(canvas.height / 2), canvas.width, 1).data;
+        let barPixels = 0;
+        for (let i = 0; i < row.length; i += 4) {
+          if (
+            row[i] === 191 &&
+            row[i + 1] === 107 &&
+            row[i + 2] === 138 &&
+            row[i + 3] === 255
+          ) {
+            barPixels++;
+          }
+        }
+        return (
+          (barPixels * canvas.getBoundingClientRect().width) / canvas.width
+        );
+      }),
+    )
+    .toBeGreaterThan(24);
+  await page.getByText("1ヶ月", { exact: true }).click();
   await page.getByLabel("この日まで").fill("2026-01-04");
   await expect(reflection).toContainText("2025-12-05 〜 2026-01-04");
   await page.getByText("1週間", { exact: true }).click();
