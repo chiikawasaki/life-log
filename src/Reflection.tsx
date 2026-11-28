@@ -225,7 +225,10 @@ export default function Reflection({ data }: { data: Data }) {
                   },
                 ],
               },
-              options: cartesianOptions,
+              options: {
+                ...cartesianOptions,
+                scales: { ...scales, x: { ...scales.x, offset: true } },
+              },
             }}
           />
         </div>
